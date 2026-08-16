@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { MenuIcon, SearchIcon, TicketPlus, XIcon, UserIcon } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
+import api from '../api/axios';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,12 +11,21 @@ const Navbar = () => {
   // Переименовываем isOpen в isModalOpen
   const { isOpen: isModalOpen, setIsOpen: isModalSet } = useAppContext();
 
-  
-  // Временный флаг авторизации (позже заменишь на проверку токена из Laravel / Context)
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const navigate = useNavigate();
-  const { favoriteMovies } = useAppContext();
+  const { favoriteMovies,isAdmin,setIsAdmin } = useAppContext();
+
+  const Logout = async (e) =>{
+    e.preventDefault();
+    try {
+      await api.post('api/logout'); 
+    } catch (err) {
+      console.log(err.response);
+    } finally{
+      // setUser(null);
+      setIsAdmin(false);
+    }
+  }
 
   return (
     <div className="fixed top-0 left-0 z-50 w-full flex items-center justify-between px-6 md:px-16 lg:px-36 py-5">
@@ -76,7 +86,7 @@ const Navbar = () => {
       <div className="flex items-center gap-6">
         <SearchIcon className="max-md:hidden w-6 h-6 cursor-pointer" />
 
-        {!isLoggedIn ? (
+        {!isAdmin ? (
           <button
             onClick={() => isModalSet(!isModalOpen)}
             className="px-4 py-1 sm:px-7 sm:py-2 bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer"
@@ -93,7 +103,7 @@ const Navbar = () => {
               <span className="max-sm:hidden">My Bookings</span>
             </button>
             <button
-              onClick={() => setIsLoggedIn(false)}
+              onClick={Logout}
               className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition cursor-pointer"
               title="Logout"
             >

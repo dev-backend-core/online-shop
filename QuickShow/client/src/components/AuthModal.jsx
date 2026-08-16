@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from "../context/AppContext";
+import api from '../api/axios';
 
 export const AuthModal = () => {
-  const {isOpen,setIsOpen} = useAppContext();
+  const {isOpen,setIsOpen,fetchIsAdmin} = useAppContext();
   const [isRegister, setIsRegister] = useState(false); // true - Регистрация, false - Вход
 
   // Поля формы
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -61,37 +61,36 @@ export const AuthModal = () => {
 
       // Определяем URL в зависимости от режима
       const endpoint = isRegister 
-        ? 'http://localhost:8000/api/register' 
-        : 'http://localhost:8000/api/login';
+        ? '/api/register' 
+        : '/api/login';
 
       const payload = isRegister 
-        ? { name, email, password } 
-        : { email, password };
+        ? { email, password } 
+        : { email };
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      
+      // 1. ОБЯЗАТЕЛЬНЫЙ ШАГ: Получаем CSRF-токен от Laravel
+      // Laravel при этом запросе сам установит CSRF-куку в браузер
+      await api.get('/sanctum/csrf-cookie');
 
-      const data = await response.json();
+      // 2. Отправляем запрос на вход
+      const response = await api.post(endpoint, payload);
 
-      if (!response.ok) {
-        throw new Error(data.message || (isRegister ? 'Ошибка при регистрации' : 'Ошибка при входе'));
-      }
-
-      // Сохраняем Sanctum-токен
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-      }
+      console.log('Успешный вход:', response.data);
+      
+      // 3. Кука авторизации (laravel_session) встала автоматически!
+      // Теперь мы можем запросить профиль пользователя:
+      const userResponse = await api.get('/api/user');
+      console.log('Текущий юзер:', userResponse.data);
 
       setIsOpen(false);
       alert(isRegister ? 'Регистрация прошла успешно!' : 'Успешная авторизация!');
+
+      await fetchIsAdmin();
+      
     } catch (err) {
-      setError(err.message || 'Произошла ошибка');
+      console.log(err.response);
+      setError(err.response.data.message || 'Произошла ошибка');
     } finally {
       setLoadingForm(false);
     }
@@ -100,7 +99,6 @@ export const AuthModal = () => {
   return (
     <div>
      
-
       {/* Модальное окно */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

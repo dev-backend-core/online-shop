@@ -6,15 +6,16 @@ use App\Http\Controllers\GoogleAuthController;
 use Illuminate\Support\Facades\Route;
 
 
-// Route::get('/user', function (Request $request) {
-//     return $request->user();
-// })->middleware('auth:sanctum');
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout',[AuthController::class,'logout'])->middleware(['web', 'auth:sanctum']);;
 
 
-
+// Вход через Google
 Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle']);
 
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);

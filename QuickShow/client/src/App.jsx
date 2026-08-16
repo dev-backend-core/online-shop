@@ -33,9 +33,9 @@ const App = () => {
         <Route path="/movies/:id" element={<MovieDetails />} />
         <Route path="/movies/:id/:date" element={<SeatLayout />} />
        
-        {/* <Route path="/login" element={<AuthModal />} /> */}
-        {/*<Route path="/my-bookings" element={<MyBookings />} />
-        <Route path="/loading/:nextUrl" element={<Loading />} />
+        
+        <Route path="/my-bookings" element={<MyBookings />} />
+        {/* <Route path="/loading/:nextUrl" element={<Loading />} />
         <Route path="/favorite" element={<Favorite />} /> */}
 
         {/* Admin Routes */}
