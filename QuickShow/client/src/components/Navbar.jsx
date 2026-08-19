@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { MenuIcon, SearchIcon, TicketPlus, XIcon, UserIcon } from "lucide-react";
@@ -10,7 +10,10 @@ const Navbar = () => {
 
   // Переименовываем isOpen в isModalOpen
   const { isOpen: isModalOpen, setIsOpen: isModalSet } = useAppContext();
-
+  // Состояния и реф для поиска
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef(null);
 
   const navigate = useNavigate();
   const { favoriteMovies,isAdmin,setIsAdmin } = useAppContext();
@@ -27,8 +30,18 @@ const Navbar = () => {
     }
   }
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setIsSearchOpen(false);
+      setSearchQuery('');
+    }
+  };
+
   return (
     <div className="fixed top-0 left-0 z-50 w-full flex items-center justify-between px-6 md:px-16 lg:px-36 py-5">
+     
       <Link to="/" className="max-md:flex-1">
         <img src={assets.logo} alt="logo" className="w-36 h-auto" />
       </Link>
@@ -84,7 +97,37 @@ const Navbar = () => {
       </div>
 
       <div className="flex items-center gap-6">
-        <SearchIcon className="max-md:hidden w-6 h-6 cursor-pointer" />
+        {/* Поисковая строка с анимацией расширения */}
+        <div className="max-md:hidden flex items-center">
+          {!isSearchOpen ? (
+            <SearchIcon 
+              onClick={() => setIsSearchOpen(true)} 
+              className="w-6 h-6 cursor-pointer hover:opacity-80 transition" 
+            />
+          ) : (
+            <form 
+              onSubmit={handleSearchSubmit} 
+              className="flex items-center gap-2 bg-white/10 border border-gray-300/20 rounded-full px-3 py-1.5 transition-all duration-300 w-48 lg:w-64"
+            >
+              <SearchIcon className="w-4 h-4 opacity-60 shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search movies..."
+                className="w-full bg-transparent text-sm text-white placeholder-gray-400 focus:outline-none"
+              />
+              <XIcon 
+                onClick={() => {
+                  setIsSearchOpen(false);
+                  setSearchQuery('');
+                }}
+                className="w-4 h-4 cursor-pointer opacity-60 hover:opacity-100 shrink-0"
+              />
+            </form>
+          )}
+        </div>
 
         {!isAdmin ? (
           <button

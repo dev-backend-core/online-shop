@@ -5,22 +5,22 @@ import timeFormat from "../lib/timeFormat";
 import { dateFormat } from "../lib/dateFormat";
 import { useAppContext } from "../context/AppContext";
 import { Link } from "react-router-dom";
+import api from "../api/axios";
 
 const MyBookings = () => {
   const currency = import.meta.env.VITE_CURRENCY;
 
-  const { axios, getToken, user, image_base_url } = useAppContext();
+  const { user, image_base_url } = useAppContext();
 
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const getMyBookings = async () => {
     try {
-      const { data } = await axios.get("/api/user/bookings", {
-        headers: { Authorization: `Bearer ${await getToken()}` },
-      });
+      const { data } = await api.get("/api/user/bookings");
 
       if (data.success) {
+        
         setBookings(data.bookings);
       }
     } catch (error) {
@@ -34,7 +34,7 @@ const MyBookings = () => {
       getMyBookings();
     }
   }, [user]);
-
+console.log(bookings[0])
   return !isLoading ? (
     <div className="relative px-6 md:px-16 lg:px-40 pt-30 md:pt-40 min-h-[80vh]">
       <BlurCircle top="100px" left="100px" />
@@ -50,17 +50,17 @@ const MyBookings = () => {
         >
           <div className="flex flex-col md:flex-row">
             <img
-              src={image_base_url + item.show.movie.poster_path}
+              src={image_base_url + item.poster_path}
               alt="poster"
               className="md:max-w-45 aspect-video h-auto object-cover object-bottom rounded"
             />
             <div className="flex flex-col p-4">
-              <p className="text-lg font-semibold">{item.show.movie.title}</p>
+              <p className="text-lg font-semibold">{item.title}</p>
               <p className="text-gray-400 text-sm">
-                {timeFormat(item.show.movie.runtime)}
+                {timeFormat(item.runtime)}
               </p>
-              <p className="text-gray-400 text-sm mt-auto">
-                {dateFormat(item.show.showDateTime)}
+              <p style={{width:'12rem'}} className="text-gray-400 text-sm mt-auto">
+                {dateFormat(item.showDateTime)}
               </p>
             </div>
           </div>
@@ -73,7 +73,7 @@ const MyBookings = () => {
               </p>
               {!item.isPaid && (
                 <Link
-                  to={item.paymentLink}
+                  to={item.paymentLink ?? ''}
                   className="bg-primary px-4 py-1.5 mb-3 text-sm rounded-full font-medium cursor-pointer"
                 >
                   Pay Now

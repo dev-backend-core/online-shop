@@ -7,6 +7,28 @@ import { useAppContext } from "../context/AppContext";
 const FeaturedSection = () => {
   const navigate = useNavigate();
   const { shows } = useAppContext();
+
+  fetch('https://kinopoiskapiunofficial.tech/api/v2.2/films/301', {
+    method: 'GET',
+    headers: {
+        'X-API-KEY': '1bc8b507-1e53-45d8-a9a7-9be40f4b1da8',
+        'Content-Type': 'application/json',
+    },
+  })
+    .then(res => res.json())
+    .then(json => console.log(json))
+    .catch(err => console.log(err))
+
+  fetch('https://kinopoiskapiunofficial.tech/api/v2.2/films/premieres?year=2026&month=AUGUST', {
+    method: 'GET',
+    headers: {
+        'X-API-KEY': '1bc8b507-1e53-45d8-a9a7-9be40f4b1da8',
+        'Content-Type': 'application/json',
+    },
+  })
+    .then(res => res.json())
+    .then(json => console.log(json))
+    .catch(err => console.log(err))
   // console.log(shows);
 
   return (

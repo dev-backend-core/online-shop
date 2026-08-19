@@ -30,7 +30,7 @@ export const AppProvider = ({ children }) => {
     if (!data) return;
 
     try {
-      // setUser(data);
+      setUser(data);
       setIsAdmin(data);
 
       if (!data && location.pathname.startsWith("/admin")) {
@@ -59,14 +59,10 @@ export const AppProvider = ({ children }) => {
   };
 
   const fetchFavoriteMovies = async () => {
-    const token = getToken();
-    if (!token) return;
+    const {data} = await api.get("/api/user/favorites");
+    if (!data) return;
 
     try {
-      const { data } = await axios.get("/api/user/favorites", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
       if (data.success) {
         setFavoriteMovies(data.movies);
       } else {
@@ -80,6 +76,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     fetchShows();
     fetchIsAdmin();
+    fetchFavoriteMovies();
   }, []);
 
   // useEffect(() => {

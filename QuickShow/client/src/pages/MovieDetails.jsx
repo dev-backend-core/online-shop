@@ -8,6 +8,7 @@ import MovieCard from "../components/MovieCard";
 import Loading from "../components/Loading";
 import { useAppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
+import api from "../api/axios";
 
 const MovieDetails = () => {
   const navigate = useNavigate();
@@ -41,10 +42,9 @@ const MovieDetails = () => {
     try {
       if (!user) return toast.error("Please login to proceed");
 
-      const { data } = await axios.post(
+      const { data } = await api.post(
         "/api/user/update-favorite",
-        { movieId: id },
-        { headers: { Authorization: `Bearer ${await getToken()}` } }
+        { movieId: id }
       );
 
       if (data.success) {

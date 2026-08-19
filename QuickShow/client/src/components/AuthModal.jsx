@@ -38,12 +38,20 @@ export const AuthModal = () => {
       setLoadingGoogle(true);
       setError(null);
 
-      const response = await fetch('http://localhost:8000/api/auth/google');
+      const response = await fetch('http://localhost:80/api/auth/google');
       if (!response.ok) {
         throw new Error('Не удалось получить ссылку для авторизации Google');
       }
 
       const data = await response.json();
+
+      // console.log('Полная ссылка Google:', data.url);
+
+      // // Распарсим URL, чтобы красиво посмотреть все параметры
+      // const parsedUrl = new URL(data.url);
+      // console.log('Параметр redirect_uri:', parsedUrl.searchParams.get('redirect_uri'));
+      // console.log('Параметр client_id:', parsedUrl.searchParams.get('client_id'));
+
       window.location.href = data.url;
     } catch (err) {
       setError(err.message || 'Произошла ошибка при входе через Google');

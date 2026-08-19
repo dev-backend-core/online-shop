@@ -35,8 +35,8 @@ const App = () => {
        
         
         <Route path="/my-bookings" element={<MyBookings />} />
-        {/* <Route path="/loading/:nextUrl" element={<Loading />} />
-        <Route path="/favorite" element={<Favorite />} /> */}
+        <Route path="/loading/:nextUrl" element={<Loading />} />
+        <Route path="/favorite" element={<Favorite />} />
 
         {/* Admin Routes */}
         {/* <Route>
