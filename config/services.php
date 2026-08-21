@@ -41,4 +41,9 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL'),
     ],
 
+    'kinopoisk' => [
+        'key' => env('KINOPOISK_API_KEY'),
+        'url' => 'https://kinopoiskapiunofficial.tech/api',
+    ],
+
 ];

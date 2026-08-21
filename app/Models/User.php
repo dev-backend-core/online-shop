@@ -18,16 +18,12 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public function favoriteMovies()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->belongsToMany(Movie::class, 'favorite_movies')->withTimestamps();
+    }
+
+    public function tickets(){
+        return $this->hasMany(Ticket::class);
     }
 }

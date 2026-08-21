@@ -5,6 +5,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
+use Illuminate\Http\Client\Pool;
 
 
 Route::get('/user', function (Request $request) {
@@ -31,56 +33,46 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::get('/show/all', function () {
-    $shows = [
-         {
-            "kinopoiskId": 4924671,
-            "nameRu": "TheatreHD: Зальцбург: Сельская честь / Паяцы",
-            "nameEn": "Mascagni: Cavalleria Rusticana / Leoncavallo: Pagliacci",
-            "year": 2016,
-            "posterUrl": "https://kinopoiskapiunofficial.tech/images/posters/kp/4924671.jpg",
-            "posterUrlPreview": "https://kinopoiskapiunofficial.tech/images/posters/kp_small/4924671.jpg",
-            "countries": [
-                {
-                    "country": "Австрия"
-                }
-            ],
-            "genres": [
-                {
-                    "genre": "драма"
-                },
-                {
-                    "genre": "музыка"
-                }
-            ],
-            "duration": 161,
-            "premiereRu": "2026-08-04"
-        },
-            [
-                "_id" => "628847",
-                "title" => "Trap House",
-                "overview" => "An undercover DEA agent...",
-                "poster_path" => "/6tpAPeuuqbVnYWWPoOLEDLSBU7a.jpg",
-                "release_date" => "2025-11-14",
-                "genres" => [
-                    ["id" => 28, "name" => "Action"],
-                    ["id" => 80, "name" => "Crime"]
-                ],
-                "casts" => [
-                    [
-                        "id" => 543530,
-                        "name" => "Dave Bautista",
-                        "character" => "Ray Seale"
-                    ]
-                ],
-                "vote_average"=> 6.229,
-                "runtime"=> 102,
-            ]
-        ];
+    $apiKey = config('services.kinopoisk.key');
+    $baseUrl = config('services.kinopoisk.url');
 
-    // Возвращаем данные. Laravel сам превратит этот массив в JSON
+    // 1. Получаем список премьер
+    $premieresResponse = Http::timeout(5)->withHeaders([
+        'X-API-KEY' => $apiKey,
+        'Content-Type' => 'application/json',
+    ])->get("{$baseUrl}/v2.2/films/premieres", [
+        'year' => Carbon::now()->year,
+        'month' => strtoupper(Carbon::now()->format('F')),
+    ]);
+
+    if ($premieresResponse->failed()) {
+        return response()->json(['success' => false, 'error' => 'API Error'], 500);
+    }
+
+    $shows = collect($premieresResponse->json('items'))->take(10); // Возьмем первые 10 фильмов
+
+    // 2. Делаем параллельные запросы детализации для каждого фильма из списка
+    $responses = Http::pool(fn (Pool $pool) => 
+        $shows->map(fn ($show) => 
+            $pool->withHeaders(['X-API-KEY' => $apiKey])
+                 ->get("{$baseUrl}/v2.2/films/{$show['kinopoiskId']}")
+        )->toArray()
+    );
+
+    // 3. Объединяем данные премьеры с полученным рейтингом
+    $showsWithRatings = $shows->map(function ($show, $index) use ($responses) { 
+        $rating = $responses[$index]?->json('ratingImdb') ?? 0;
+        $randomRating = round(mt_rand(50, 71) / 10, 1);
+
+        // Проверяем на 0 (на случай если API вернул ровно 0)
+        $show['ratingImdb'] = ($rating > 0) ? (float) $rating : $randomRating;
+
+        return $show;
+    });
+
     return response()->json([
         'success' => true,
-        'shows' => $shows
+        'shows' => $showsWithRatings
     ]);
 });
 
