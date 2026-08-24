@@ -20,6 +20,7 @@ class Movie extends Model
         'poster_url',
         'rating',
         'genres',
+        'poster_preview_url',
         'year'
     ];
 

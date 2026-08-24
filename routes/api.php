@@ -3,6 +3,8 @@
 use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Models\Movie;
+use App\Models\Show;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
@@ -33,6 +35,16 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::get('/show/all', function () {
+
+    $moviesInDb = Movie::all();
+
+    if ($moviesInDb->isNotEmpty()) {
+        return response()->json([
+            'success' => true,
+            'shows' => $moviesInDb
+        ]);
+    }
+
     $apiKey = config('services.kinopoisk.key');
     $baseUrl = config('services.kinopoisk.url');
 
@@ -58,21 +70,70 @@ Route::get('/show/all', function () {
                  ->get("{$baseUrl}/v2.2/films/{$show['kinopoiskId']}")
         )->toArray()
     );
+    
+    $dateTime = [
+        "2026-12-04"=> [
+            [
+                "time" => "2026-12-04T10:00:00.000Z",
+            ],
+            [
+                "time" => "2026-12-04T12:00:00.000Z",
+            ],
+            [
+                "time"=> "2026-12-04T21:00:00.000Z",
+            ]
+        ]
+    ];
 
     // 3. Объединяем данные премьеры с полученным рейтингом
-    $showsWithRatings = $shows->map(function ($show, $index) use ($responses) { 
-        $rating = $responses[$index]?->json('ratingImdb') ?? 0;
-        $randomRating = round(mt_rand(50, 71) / 10, 1);
+    $shows->each(function ($show, $index) use ($responses,$dateTime) { 
+        $details = $responses[$index]?->successful() ? $responses[$index]->json() : [];
 
-        // Проверяем на 0 (на случай если API вернул ровно 0)
-        $show['ratingImdb'] = ($rating > 0) ? (float) $rating : $randomRating;
+        $rating = $details['ratingImdb'] ?? $details['ratingKinopoisk'] ?? null;
+        $finalRating = ($rating > 0) ? (float) $rating : round(mt_rand(50, 71) / 10, 1);
+      
+        $description = $details['shortDescription'] ?? $details['description'] ?? 'Описание отсутствует';
+       
+        $genresArray = array_column($show['genres'] ?? [], 'genre'); 
+            // На выходе получим: ['драма', 'музыка']
 
-        return $show;
+        $movie = Movie::updateOrCreate(
+            ['kinopoisk_id' => $show['kinopoiskId']],
+            [
+                'title' => $show['nameEn'] ?? $show['nameRu'] ?? 'Без названия',
+                'description' => $description,
+                'duration_min' => $show['duration'] ?? null,
+                'poster_url' => $show['posterUrl'] ?? null,
+                'poster_preview_url' => $show['posterUrlPreview'] ?? null,
+                'rating' => $finalRating,
+                'year' => $show['year'] ?? null,
+
+                'genres' => $genresArray,
+            ]
+        );
+
+        foreach ($dateTime as $date => $sessions) {
+            foreach ($sessions as $session) {
+                
+                // 1. Приводим дату из формата ISO (2026-12-04T18:00:00.000Z) в формат Carbon/MySQL
+                $startTime = Carbon::parse($session['time']);
+            
+                Show::updateOrCreate([
+                    'movie_id'   => $movie->id,  
+                    'start_time' => $startTime, 
+                ],
+                [
+                    'price'      => 350.00,
+                ]);
+            }
+        }
     });
+
+    
 
     return response()->json([
         'success' => true,
-        'shows' => $showsWithRatings
+        'shows' => Movie::all()
     ]);
 });
 
@@ -112,28 +173,13 @@ Route::get('/show/{id}', function () {
         "runtime"=> 102, 
     ];
 
-    $dateTime = [
-        "2026-12-04"=> [
-            [
-                "time" => "2026-12-04T18:00:00.000Z",
-                "showId" => "696217ce31b14e181b24d3bd"
-            ],
-            [
-                "time" => "2026-12-04T12:00:00.000Z",
-                "showId" => "696217ce31b14e181b24d3bd"
-            ],
-            [
-                "time"=> "2026-12-04T21:00:00.000Z",
-                "showId"=> "696217ce31b14e181b24d3be"
-            ]
-        ]
-    ];
+    
 
     // Возвращаем данные. Laravel сам превратит этот массив в JSON
     return response()->json([
         'success' => true,
         'movie' => $movie,
-        'dateTime' => $dateTime
+        // 'dateTime' => $dateTime
     ]);
 });
 
