@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Models\Movie;
+use App\Models\Seat;
 use App\Models\Show;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
@@ -137,49 +138,23 @@ Route::get('/show/all', function () {
     ]);
 });
 
-Route::get('/show/{id}', function () {
-    $movie = [  
-        "_id" => "628847",
-        "title" => "Trap House",
-        "overview" => "An undercover DEA agent...",
-        "poster_path" => "/6tpAPeuuqbVnYWWPoOLEDLSBU7a.jpg",
-        "backdrop_path"=> "/oIJjO1CvEdTMFNkWfHaV0RB584G.jpg",
-        "release_date"=> "2025-11-14",
-        "original_language"=> "en",
-        "tagline"=> "This isn't a raid. It's a reckoning.",
-        "release_date" => "2025-11-14",
-        "genres" => [
-            ["id" => 28, "name" => "Action"],
-            ["id" => 80, "name" => "Crime"]
-        ],
-        "casts" => [
-            [
-                "id" => 543530,
-                "name" => "Dave Bautista",
-                "character" => "Ray Seale"
-            ],
-            [
-                "id" => 543531,
-                "name" => "Dave Bautista",
-                "character" => "Ray Seale"
-            ],
-            [
-                "id" => 543532,
-                "name" => "Dave Bautista",
-                "character" => "Ray Seale"
-            ]
-        ],
-        "vote_average"=> 6.229,
-        "runtime"=> 102, 
-    ];
-
-    
+Route::get('/show/{movie:kinopoisk_id}', function (Movie $movie) {
+    // $movie = Movie::findOrFail($id);
+    // $shows = $movie->shows;
+    $movie->load('shows');
 
     // Возвращаем данные. Laravel сам превратит этот массив в JSON
     return response()->json([
         'success' => true,
         'movie' => $movie,
         // 'dateTime' => $dateTime
+    ]);
+});
+
+Route::get('/seats',function(){
+     return response()->json([
+        'success' => true,
+        'seat' => Seat::all(),
     ]);
 });
 

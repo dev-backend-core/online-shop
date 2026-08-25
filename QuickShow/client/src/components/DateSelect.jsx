@@ -9,11 +9,14 @@ const DateSelect = ({ dateTime, id }) => {
 
   const [selected, setSelected] = useState(null);
 
+  // console.log(dateTime);
+
   const onBookHandler = () => {
     if (!selected) {
       return toast("Please select a date");
     }
-    navigate(`/movies/${id}/${selected}`);
+    // console.log( new Date(selected).getFullYear() )
+    navigate(`/movies/${id}/${selected.split('T')[0]}`);
     scrollTo(0, 0);
   };
 
@@ -27,19 +30,19 @@ const DateSelect = ({ dateTime, id }) => {
           <div className="flex items-center gap-6 text-sm mt-5">
             <ChevronLeftIcon width={28} />
             <span className="grid grid-cols-3 md:flex flex-wrap md:max-w-lg gap-4">
-              {Object.keys(dateTime).map((date) => (
+              {dateTime.map((date,id) => (
                 <button
-                  onClick={() => setSelected(date)}
-                  key={date}
+                  onClick={() => setSelected(date.start_time)}
+                  key={id}
                   className={`flex flex-col items-center justify-center h-14 w-14 aspect-square rounded cursor-pointer ${
-                    selected === date
+                    selected === date.start_time
                       ? "bg-primary text-white"
                       : "border border-primary/70"
                   }`}
                 >
-                  <span>{new Date(date).getDate()}</span>
+                  <span>{new Date(date.start_time).getDate()}</span>
                   <span>
-                    {new Date(date).toLocaleString("en-US", { month: "short" })}
+                    {new Date(date.start_time).toLocaleString("en-US", { month: "short" })}
                   </span>
                 </button>
               ))}

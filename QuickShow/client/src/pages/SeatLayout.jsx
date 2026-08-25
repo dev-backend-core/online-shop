@@ -21,6 +21,7 @@ const SeatLayout = () => {
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [selectedTime, setSelectedTime] = useState(null);
   const [show, setShow] = useState(null);
+  const [seatsFromDb,setSeatsFromDb] = useState(null)
   const [occupiedSeats, setOccupiedSeats] = useState([]);
 
   const navigate = useNavigate();
@@ -29,10 +30,11 @@ const SeatLayout = () => {
 
   const getShow = async () => {
     try {
+      const response = await axios.get('/api/seats')
       const { data } = await axios.get(`/api/show/${id}`);
       if (data.success) {
-        setShow(data);
-        console.log(show.dateTime[date]);
+        setShow(data.movie.shows);
+        setSeatsFromDb(response.data);
       }
     } catch (error) {
       console.log(error);
@@ -76,6 +78,49 @@ const SeatLayout = () => {
       </div>
     </div>
   );
+
+
+  const renderSeats = (row, count = 9) => {
+  // 1. Превращаем букву ряда в число для поиска в БД: 'A' -> 1, 'B' -> 2, 'C' -> 3 ...
+  const rowNum = row.charCodeAt(0) - 64;
+
+  return (
+    <div key={row} className="flex items-center gap-2 mt-2">
+      {/* Буква ряда слева для красоты */}
+      <span className="w-5 text-gray-400 font-bold text-xs">{row}</span>
+
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {Array.from({ length: count }, (_, i) => {
+          const seatNumber = i + 1;
+          const seatLabel = `${row}${seatNumber}`; // Отображение для юзера: "A1", "A2"
+
+          // 2. Ищем в массиве из БД (`seatsFromDb`) конкретное кресло
+          const dbSeat = seatsFromDb.find(
+            (s) => s.row_number === rowNum && s.seat_number === seatNumber
+          );
+
+          // Если в базе такого места нет (например, в ряду меньше мест), пропускаем
+          if (!dbSeat) return null;
+
+          const seatId = dbSeat.id; // Реальный ID из БД (например, 1, 2, 10...)
+          const isSelected = selectedSeats.includes(seatId);
+
+          return (
+            <button
+              key={seatId}
+              onClick={() => handleSeatClick(seatId)} // Передаем реальный id из БД
+              className={`h-8 w-8 rounded border border-primary/60 cursor-pointer text-xs flex items-center justify-center transition ${
+                isSelected ? "bg-primary text-white" : "hover:bg-primary/20 text-gray-300"
+              }`}
+            >
+              {seatNumber} {/* Или можно вывести seatLabel, если хотите писать A1, A2 */}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
   const getOccupiedSeats = async () => {
     try {
@@ -132,18 +177,18 @@ const SeatLayout = () => {
       <div className="w-60 bg-primary/10 border border-primary/20 rounded-lg py-10 h-max md:sticky md:top-30">
         <p className="text-lg font-semibold px-6">Available Timings</p>
         <div className="mt-5 space-y-1">
-          {show.dateTime[date].map((item) => (
+          {show.map((item) => (
             <div
-              key={item.time}
+              key={item.id}
               onClick={() => setSelectedTime(item)}
               className={`flex items-center gap-2 px-6 py-2 w-max rounded-r-md cursor-pointer transition ${
-                selectedTime?.time === item.time
+                selectedTime?.start_time === item.start_time
                   ? "bg-primary text-white"
                   : "hover:bg-primary/20"
               }`}
             >
               <ClockIcon className="w-4 h-4" />
-              <p className="text-sm">{isoTimeFormat(item.time)}</p>
+              <p className="text-sm">{isoTimeFormat(item.start_time)}</p>
             </div>
           ))}
         </div>

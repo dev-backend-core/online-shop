@@ -19,18 +19,18 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $movies = Movie::factory(5)->create();
+        // $movies = Movie::factory(5)->create();
        
-        $user = User::factory()->create([
-            'email' => 'test@example.com',
-        ]);
+        // $user = User::factory()->create([
+        //     'email' => 'test@example.com',
+        // ]);
 
-        // 4. Создаем сеансы
-        foreach($movies as $item){
-            Show::factory()->create([
-                'movie_id' => $item->id,
-            ]);
-        }
+        // // 4. Создаем сеансы
+        // foreach($movies as $item){
+        //     Show::factory()->create([
+        //         'movie_id' => $item->id,
+        //     ]);
+        // }
 
         $seats = collect();
         for ($row = 1; $row <= 10; $row++) {
@@ -45,17 +45,17 @@ class DatabaseSeeder extends Seeder
         }
 
         // 5. Покупаем пару пробных билетов для первого сеанса
-        $show = Show::first();
+        // $show = Show::first();
        
-        Ticket::factory()->create([
-            'user_id' => $user->id,
-            'show_id' => $show->id,
-            'seat_id' => $seats->first()->id,
-            'price'   => $show->price,
-        ]);
+        // Ticket::factory()->create([
+        //     'user_id' => $user->id,
+        //     'show_id' => $show->id,
+        //     'seat_id' => $seats->first()->id,
+        //     'price'   => $show->price,
+        // ]);
         
-        $user->favoriteMovies()->attach(
-            $movies->random(2)->pluck('id')
-        );
+        // $user->favoriteMovies()->attach(
+        //     $movies->random(2)->pluck('id')
+        // );
     }
 }
