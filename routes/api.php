@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\FavoriteController;
+use App\Http\Controllers\Api\MovieController;
+use App\Http\Controllers\Api\SeatController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
@@ -35,179 +38,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::apiResource('posts', PostController::class);
 });
 
-Route::get('/show/all', function () {
+Route::get('/show/all',[MovieController::class,'index']);
 
-    $moviesInDb = Movie::all();
+Route::get('/show/{movie}', [MovieController::class,'movieDetails']);
 
-    if ($moviesInDb->isNotEmpty()) {
-        return response()->json([
-            'success' => true,
-            'shows' => $moviesInDb
-        ]);
-    }
+Route::get('/seats',[SeatController::class,'index']);
 
-    $apiKey = config('services.kinopoisk.key');
-    $baseUrl = config('services.kinopoisk.url');
+Route::get('/user/favorites', [FavoriteController::class,'index']);
 
-    // 1. Получаем список премьер
-    $premieresResponse = Http::timeout(5)->withHeaders([
-        'X-API-KEY' => $apiKey,
-        'Content-Type' => 'application/json',
-    ])->get("{$baseUrl}/v2.2/films/premieres", [
-        'year' => Carbon::now()->year,
-        'month' => strtoupper(Carbon::now()->format('F')),
-    ]);
-
-    if ($premieresResponse->failed()) {
-        return response()->json(['success' => false, 'error' => 'API Error'], 500);
-    }
-
-    $shows = collect($premieresResponse->json('items'))->take(10); // Возьмем первые 10 фильмов
-
-    // 2. Делаем параллельные запросы детализации для каждого фильма из списка
-    $responses = Http::pool(fn (Pool $pool) => 
-        $shows->map(fn ($show) => 
-            $pool->withHeaders(['X-API-KEY' => $apiKey])
-                 ->get("{$baseUrl}/v2.2/films/{$show['kinopoiskId']}")
-        )->toArray()
-    );
-    
-    $dateTime = [
-        "2026-12-04"=> [
-            [
-                "time" => "2026-12-04T10:00:00.000Z",
-            ],
-            [
-                "time" => "2026-12-04T12:00:00.000Z",
-            ],
-            [
-                "time"=> "2026-12-04T21:00:00.000Z",
-            ]
-        ]
-    ];
-
-    // 3. Объединяем данные премьеры с полученным рейтингом
-    $shows->each(function ($show, $index) use ($responses,$dateTime) { 
-        $details = $responses[$index]?->successful() ? $responses[$index]->json() : [];
-
-        $rating = $details['ratingImdb'] ?? $details['ratingKinopoisk'] ?? null;
-        $finalRating = ($rating > 0) ? (float) $rating : round(mt_rand(50, 71) / 10, 1);
-      
-        $description = $details['shortDescription'] ?? $details['description'] ?? 'Описание отсутствует';
-       
-        $genresArray = array_column($show['genres'] ?? [], 'genre'); 
-            // На выходе получим: ['драма', 'музыка']
-
-        $movie = Movie::updateOrCreate(
-            ['kinopoisk_id' => $show['kinopoiskId']],
-            [
-                'title' => $show['nameEn'] ?? $show['nameRu'] ?? 'Без названия',
-                'description' => $description,
-                'duration_min' => $show['duration'] ?? null,
-                'poster_url' => $show['posterUrl'] ?? null,
-                'poster_preview_url' => $show['posterUrlPreview'] ?? null,
-                'rating' => $finalRating,
-                'year' => $show['year'] ?? null,
-
-                'genres' => $genresArray,
-            ]
-        );
-
-        foreach ($dateTime as $date => $sessions) {
-            foreach ($sessions as $session) {
-                
-                // 1. Приводим дату из формата ISO (2026-12-04T18:00:00.000Z) в формат Carbon/MySQL
-                $startTime = Carbon::parse($session['time']);
-            
-                Show::updateOrCreate([
-                    'movie_id'   => $movie->id,  
-                    'start_time' => $startTime, 
-                ],
-                [
-                    'price'      => 350.00,
-                ]);
-            }
-        }
-    });
-
-    
-
-    return response()->json([
-        'success' => true,
-        'shows' => Movie::all()
-    ]);
-});
-
-Route::get('/show/{movie:kinopoisk_id}', function (Movie $movie) {
-    // $movie = Movie::findOrFail($id);
-    // $shows = $movie->shows;
-    $movie->load('shows');
-
-    // Возвращаем данные. Laravel сам превратит этот массив в JSON
-    return response()->json([
-        'success' => true,
-        'movie' => $movie,
-        // 'dateTime' => $dateTime
-    ]);
-});
-
-Route::get('/seats',function(){
-     return response()->json([
-        'success' => true,
-        'seat' => Seat::all(),
-    ]);
-});
-
-Route::get('/user/favorites', function () {
-    $shows = [
-        [
-            "_id" => "628847",
-            "title" => "Trap House",
-            "overview" => "An undercover DEA agent...",
-            "poster_path" => "/6tpAPeuuqbVnYWWPoOLEDLSBU7a.jpg",
-            "release_date" => "2025-11-14",
-            "genres" => [
-                ["id" => 28, "name" => "Action"],
-                ["id" => 80, "name" => "Crime"]
-            ],
-            "casts" => [
-                [
-                    "id" => 543530,
-                    "name" => "Dave Bautista",
-                    "character" => "Ray Seale"
-                ]
-            ],
-            "vote_average"=> 6.229,
-            "runtime"=> 102,
-        ],
-        [
-            "_id" => "628849",
-            "title" => "Trap House 2",
-            "overview" => "An undercover DEA agent...",
-            "poster_path" => "/6tpAPeuuqbVnYWWPoOLEDLSBU7a.jpg",
-            "release_date" => "2025-11-14",
-            "genres" => [
-                ["id" => 28, "name" => "Action"],
-                ["id" => 80, "name" => "Crime"]
-            ],
-            "casts" => [
-                [
-                    "id" => 543530,
-                    "name" => "Dave Bautista",
-                    "character" => "Ray Seale"
-                ]
-            ],
-            "vote_average"=> 6.229,
-            "runtime"=> 102,
-        ]
-    ];
-
-    // Возвращаем данные. Laravel сам превратит этот массив в JSON
-    return response()->json([
-        'success' => true,
-        'movies' => $shows
-    ]);
-});
+Route::post('/user/update-favorite', [FavoriteController::class,'toggle']);
 
 Route::get('/user/bookings', function () {
     $shows = [

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { assets } from "../assets/assets";
 import Loading from "../components/Loading";
@@ -30,11 +30,14 @@ const SeatLayout = () => {
 
   const getShow = async () => {
     try {
-      const response = await axios.get('/api/seats')
-      const { data } = await axios.get(`/api/show/${id}`);
-      if (data.success) {
-        setShow(data.movie.shows);
-        setSeatsFromDb(response.data);
+      const [seatsRes, showRes] = await Promise.all([
+        axios.get('/api/seats'),
+        axios.get(`/api/show/${id}`)
+      ]);
+
+      if (showRes.data.success) {
+        setShow(showRes.data.movie.shows);
+        setSeatsFromDb(seatsRes.data.seat);
       }
     } catch (error) {
       console.log(error);
@@ -58,69 +61,78 @@ const SeatLayout = () => {
     );
   };
 
-  const renderSeats = (row, count = 9) => (
-    <div key={row} className="flex gap-2 mt-2">
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {Array.from({ length: count }, (_, i) => {
-          const seatId = `${row}${i + 1}`;
-          return (
-            <button
-              key={seatId}
-              onClick={() => handleSeatClick(seatId)}
-              className={`h-8 w-8 rounded border border-primary/60 cursor-pointer ${
-                selectedSeats.includes(seatId) && "bg-primary text-white"
-              } ${occupiedSeats.includes(seatId) && "opacity-50"}`}
-            >
-              {seatId}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+  const seatMap = useMemo(() => {
+    const map = {};
+    seatsFromDb?.forEach((seat) => {
+      map[`${seat.row_number}_${seat.seat_number}`] = seat;
+    });
+    return map;
+  }, [seatsFromDb]);
+
+  // const renderSeats = (row, count = 9) => (
+  //   <div key={row} className="flex gap-2 mt-2">
+  //     <div className="flex flex-wrap items-center justify-center gap-2">
+  //       {Array.from({ length: count }, (_, i) => {
+  //         const seatId = `${row}${i + 1}`;
+  //         return (
+  //           <button
+  //             key={seatId}
+  //             onClick={() => handleSeatClick(seatId)}
+  //             className={`h-8 w-8 rounded border border-primary/60 cursor-pointer ${
+  //               selectedSeats.includes(seatId) && "bg-primary text-white"
+  //             } ${occupiedSeats.includes(seatId) && "opacity-50"}`}
+  //           >
+  //             {seatId}
+  //           </button>
+  //         );
+  //       })}
+  //     </div>
+  //   </div>
+  // );
 
 
   const renderSeats = (row, count = 9) => {
-  // 1. Превращаем букву ряда в число для поиска в БД: 'A' -> 1, 'B' -> 2, 'C' -> 3 ...
-  const rowNum = row.charCodeAt(0) - 64;
+    // 1. Превращаем букву ряда в число для поиска в БД: 'A' -> 1, 'B' -> 2, 'C' -> 3 ...
+    const rowNum = row.charCodeAt(0) - 64;
 
-  return (
-    <div key={row} className="flex items-center gap-2 mt-2">
-      {/* Буква ряда слева для красоты */}
-      <span className="w-5 text-gray-400 font-bold text-xs">{row}</span>
+    return (
+      <div key={row} className="flex items-center gap-2 mt-2">
+        {/* Буква ряда */}
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {Array.from({ length: count }, (_, i) => {
+            const seatNumber = i + 1;
+            
+            // Мгновенный поиск из prepared-карты
+            const dbSeat = seatMap[`${rowNum}_${seatNumber}`];
 
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {Array.from({ length: count }, (_, i) => {
-          const seatNumber = i + 1;
-          const seatLabel = `${row}${seatNumber}`; // Отображение для юзера: "A1", "A2"
+            // Если места нет в БД — отрисуем пустую заглушку для сохранения сетки или null
+            if (!dbSeat) return null;
 
-          // 2. Ищем в массиве из БД (`seatsFromDb`) конкретное кресло
-          const dbSeat = seatsFromDb.find(
-            (s) => s.row_number === rowNum && s.seat_number === seatNumber
-          );
+            const seatId = dbSeat.id;
+            const isSelected = selectedSeats.includes(seatId);
+            const isOccupied = occupiedSeats?.includes(seatId); // Добавили проверку на занятость
 
-          // Если в базе такого места нет (например, в ряду меньше мест), пропускаем
-          if (!dbSeat) return null;
-
-          const seatId = dbSeat.id; // Реальный ID из БД (например, 1, 2, 10...)
-          const isSelected = selectedSeats.includes(seatId);
-
-          return (
-            <button
-              key={seatId}
-              onClick={() => handleSeatClick(seatId)} // Передаем реальный id из БД
-              className={`h-8 w-8 rounded border border-primary/60 cursor-pointer text-xs flex items-center justify-center transition ${
-                isSelected ? "bg-primary text-white" : "hover:bg-primary/20 text-gray-300"
-              }`}
-            >
-              {seatNumber} {/* Или можно вывести seatLabel, если хотите писать A1, A2 */}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={seatId}
+                disabled={isOccupied}
+                onClick={() => handleSeatClick(seatId)}
+                className={`h-8 w-8 rounded border text-xs flex items-center justify-center transition-all ${
+                  isOccupied
+                    ? "border-gray-700 bg-gray-800 text-gray-600 cursor-not-allowed opacity-50"
+                    : isSelected
+                    ? "bg-primary border-primary text-white font-bold cursor-pointer scale-105"
+                    : "border-primary/60 hover:bg-primary/20 text-gray-300 cursor-pointer"
+                }`}
+              >
+                {`${row}${seatNumber}`}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   const getOccupiedSeats = async () => {
     try {
@@ -162,8 +174,9 @@ const SeatLayout = () => {
 
   useEffect(() => {
     getShow();
-    
   }, []);
+
+  // console.log(seatMap)
 
   useEffect(() => {
     if (selectedTime) {

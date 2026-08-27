@@ -76,15 +76,14 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     fetchShows();
     fetchIsAdmin();
-    fetchFavoriteMovies();
   }, []);
 
-  // useEffect(() => {
-  //   if (isAdmin) {
-  //     fetchIsAdmin();
-  //     fetchFavoriteMovies();
-  //   }
-  // }, []);
+  useEffect(() => {
+    if (isAdmin) {
+      fetchIsAdmin();
+      fetchFavoriteMovies();
+    }
+  }, []);
 
   const value = {
     axios,

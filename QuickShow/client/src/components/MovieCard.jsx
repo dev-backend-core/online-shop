@@ -6,8 +6,6 @@ import { useAppContext } from "../context/AppContext";
 const MovieCard = ({ movie }) => {
   const navigate = useNavigate();
 
-  const { image_base_url } = useAppContext();
-
   // console.log(movie);
 
   return (
@@ -36,7 +34,7 @@ const MovieCard = ({ movie }) => {
       <div className="flex items-center justify-between mt-4 pb-3">
         <button
           onClick={() => {
-            navigate(`/movies/${movie.kinopoisk_id}`);
+            navigate(`/movies/${movie.id}`);
             scrollTo(0, 0);
           }}
           className="px-4 py-2 text-xs bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer"

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 
 class Movie extends Model
@@ -27,6 +28,19 @@ class Movie extends Model
     protected $casts = [
         'genres' => 'array',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($movie) {
+            if (empty($movie->slug)) {
+                $title = !empty($movie->title) ? $movie->title : 'movie-' . Str::random(6);
+                
+                $movie->slug = Str::slug($title);
+            }
+        });
+    }
 
     public function favoritedByUsers()
     {
