@@ -81,7 +81,10 @@ class MovieController extends Controller
             $movie = Movie::updateOrCreate(
                 ['kinopoisk_id' => $show['kinopoiskId']],
                 [
-                    'title' => $show['nameEn'] ?? $show['nameRu'] ?? 'Без названия',
+                   'title' => head(array_filter([
+                        $show['nameEn'] ?? null,
+                        $show['nameRu'] ?? null,
+                    ], 'filled')) ?: 'Без названия',
                     'description' => $description,
                     'duration_min' => $show['duration'] ?? null,
                     'poster_url' => $show['posterUrl'] ?? null,

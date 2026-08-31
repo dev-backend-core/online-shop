@@ -17,7 +17,7 @@ class FavoriteController extends Controller
 
     public function toggle(Request $request){
         $validated = $request->validate([
-        'movieId' => 'required|string|exists:movies,id',
+        'movieId' => 'required|integer|exists:movies,id',
         ]);
 
         $user = $request->user();

@@ -7,6 +7,7 @@ import isoTimeFormat from "../lib/isoTimeFormat";
 import BlurCircle from "../components/BlurCircle";
 import toast from "react-hot-toast";
 import { useAppContext } from "../context/AppContext";
+import api from "../api/axios";
 
 const SeatLayout = () => {
   const groupRows = [
@@ -45,6 +46,7 @@ const SeatLayout = () => {
   };
 
   const handleSeatClick = (seatId) => {
+    // console.log(seatId);
     if (!selectedTime) {
       return toast("Please select time first");
     }
@@ -60,6 +62,8 @@ const SeatLayout = () => {
         : [...prev, seatId]
     );
   };
+
+  // console.log(selectedTime.id);
 
   const seatMap = useMemo(() => {
     const map = {};
@@ -94,7 +98,6 @@ const SeatLayout = () => {
   const renderSeats = (row, count = 9) => {
     // 1. Превращаем букву ряда в число для поиска в БД: 'A' -> 1, 'B' -> 2, 'C' -> 3 ...
     const rowNum = row.charCodeAt(0) - 64;
-
     return (
       <div key={row} className="flex items-center gap-2 mt-2">
         {/* Буква ряда */}
@@ -136,8 +139,9 @@ const SeatLayout = () => {
 
   const getOccupiedSeats = async () => {
     try {
+      //id сеанса 
       const { data } = await axios.get(
-        `/api/booking/seats/${selectedTime.showId}`
+        `/api/booking/seats/${selectedTime.id}`
       );
       if (data.success) {
         setOccupiedSeats(data.occupiedSeats);
@@ -156,17 +160,18 @@ const SeatLayout = () => {
       if (!selectedTime || !selectedSeats.length)
         return toast.error("Please select a time and seats");
 
-      const { data } = await axios.post(
+      const { data } = await api.post(
         "/api/booking/create",
-        { showId: selectedTime.showId, selectedSeats },
-        { headers: { Authorization: `Bearer ${await getToken()}` } }
+        { showId: selectedTime.id, 
+          selectedSeats,
+        },
       );
 
-      if (data.success) {
-        window.location.href = data.url;
-      } else {
-        toast.error(data.message);
-      }
+      // if (data.success) {
+      //   window.location.href = data.url;
+      // } else {
+      //   toast.error(data.message);
+      // }
     } catch (error) {
       toast.error(error.message);
     }

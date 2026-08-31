@@ -10,7 +10,7 @@ import api from "../api/axios";
 const MyBookings = () => {
   const currency = import.meta.env.VITE_CURRENCY;
 
-  const { user, image_base_url } = useAppContext();
+  const { user } = useAppContext();
 
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +34,9 @@ const MyBookings = () => {
       getMyBookings();
     }
   }, [user]);
-console.log(bookings[0])
+
+// console.log(count(bookings[0].seat_id))
+
   return !isLoading ? (
     <div className="relative px-6 md:px-16 lg:px-40 pt-30 md:pt-40 min-h-[80vh]">
       <BlurCircle top="100px" left="100px" />
@@ -50,17 +52,17 @@ console.log(bookings[0])
         >
           <div className="flex flex-col md:flex-row">
             <img
-              src={image_base_url + item.poster_path}
+              src={item.movie.poster_preview_url}
               alt="poster"
               className="md:max-w-45 aspect-video h-auto object-cover object-bottom rounded"
             />
             <div className="flex flex-col p-4">
-              <p className="text-lg font-semibold">{item.title}</p>
+              <p className="text-lg font-semibold">{item.movie.title}</p>
               <p className="text-gray-400 text-sm">
-                {timeFormat(item.runtime)}
+                {timeFormat(item.movie.duration_min)}
               </p>
               <p style={{width:'12rem'}} className="text-gray-400 text-sm mt-auto">
-                {dateFormat(item.showDateTime)}
+                {dateFormat(item.show.start_time)}
               </p>
             </div>
           </div>
@@ -68,10 +70,9 @@ console.log(bookings[0])
           <div className="flex flex-col md:items-end md:text-right justify-between p-4">
             <div className="flex items-center gap-4">
               <p className="text-2xl font-semibold mb-3">
-                {currency}
-                {item.amount}
+                {`$${item.total_price}`}
               </p>
-              {!item.isPaid && (
+              {item.status === 'reserved' &&  (
                 <Link
                   to={item.paymentLink ?? ''}
                   className="bg-primary px-4 py-1.5 mb-3 text-sm rounded-full font-medium cursor-pointer"
@@ -80,14 +81,14 @@ console.log(bookings[0])
                 </Link>
               )}
             </div>
-            <div className="text-sm">
+            <div style={{width:'12rem'}} className="text-sm">
               <p>
                 <span className="text-gray-400">Total Tickets:</span>{" "}
-                {item.bookedSeats.length}
+                {item.total_seats}
               </p>
               <p>
                 <span className="text-gray-400">Seat Number:</span>{" "}
-                {item.bookedSeats.join(", ")}
+                {item.seats_list}
               </p>
             </div>
           </div>

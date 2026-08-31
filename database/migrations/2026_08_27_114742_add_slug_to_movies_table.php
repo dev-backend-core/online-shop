@@ -15,29 +15,29 @@ return new class extends Migration
     public function up(): void
     {
        // 1. Добавляем колонку slug (делаем её nullable на время заполненитя)
-        Schema::table('movies', function (Blueprint $table) {
-            $table->string('slug')->nullable()->after('title');
-        });
+        // Schema::table('movies', function (Blueprint $table) {
+        //     $table->string('slug')->nullable()->after('title');
+        // });
 
-        $movies = DB::table('movies')->get();
+        // $movies = DB::table('movies')->get();
 
-        foreach($movies as $movie){
-            $title = !empty($movie->title) ? $movie->title : 'movie-'. $movie->id;
+        // foreach($movies as $movie){
+        //     $title = !empty($movie->title) ? $movie->title : 'movie-'. $movie->id;
 
-            $slug = Str::slug($title);
+        //     $slug = Str::slug($title);
 
-            if(empty($slug)){
-                $slug = 'movie'.$movie->id;
-            }
+        //     if(empty($slug)){
+        //         $slug = 'movie'.$movie->id;
+        //     }
 
-            DB::table('movies')
-            ->where('id',$movie->id)
-            ->update(['slug' => $slug]);
-        }
+        //     DB::table('movies')
+        //     ->where('id',$movie->id)
+        //     ->update(['slug' => $slug]);
+        // }
 
         // 3. Делаем колонку slug обязательной и уникальной
         Schema::table('movies', function (Blueprint $table) {
-            $table->string('slug')->nullable(false)->unique()->change();
+            $table->string('slug')->unique()->after('title');
         });
     }
 

@@ -12,8 +12,10 @@ import api from "../api/axios";
 
 const MovieDetails = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
   const [show, setShow] = useState(null);
+
+  let { id } = useParams();
+  id = parseInt(id); 
 
   const {
     shows,

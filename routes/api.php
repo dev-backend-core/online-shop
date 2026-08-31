@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\MovieController;
 use App\Http\Controllers\Api\SeatController;
@@ -9,7 +10,9 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Models\Movie;
 use App\Models\Seat;
 use App\Models\Show;
+use App\Models\Ticket;
 use Illuminate\Support\Facades\Route;
+
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 use Illuminate\Http\Client\Pool;
@@ -48,28 +51,12 @@ Route::get('/user/favorites', [FavoriteController::class,'index']);
 
 Route::post('/user/update-favorite', [FavoriteController::class,'toggle']);
 
-Route::get('/user/bookings', function () {
-    $shows = [
-        [    
-            "title" => "Trap House",
-            "runtime"=> 102,
-            "poster_path" => "/6tpAPeuuqbVnYWWPoOLEDLSBU7a.jpg",
-            "showDateTime" => '2026-01-10T09:16:44.060Z',
-            "isPaid" => true,
-            "bookedSeats" => ['4A','3B'],
-            "amount" => '$120',
-        ]
-    ];
+Route::get('/user/bookings', [BookingController::class,'index']);
 
-    // Возвращаем данные. Laravel сам превратит этот массив в JSON
-    return response()->json([
-        'success' => true,
-        'bookings' => $shows
-    ]);
-});
-
-Route::get('/booking/seats/{id}', function () {
-    $occupiedSeats = ["A1","A2","A3"];
+Route::get('/booking/seats/{show}', function (Show $show) {
+    $occupiedSeats = $show->tickets()
+        ->pluck('seat_id')
+        ->toArray();
 
     // Возвращаем данные. Laravel сам превратит этот массив в JSON
     return response()->json([
@@ -77,4 +64,6 @@ Route::get('/booking/seats/{id}', function () {
         'occupiedSeats' => $occupiedSeats
     ]);
 });
+
+Route::post('/booking/create', [BookingController::class,'create']);
 
