@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 
 class FavoriteController extends Controller
 {
-    public function index(Request $request){
+    public function index(Request $request)
+    {
         $shows = $request->user()->favoriteMovies;
         return response()->json([
             'success' => true,
@@ -25,7 +26,7 @@ class FavoriteController extends Controller
         $result = $user->favoriteMovies()->toggle($validated['movieId']);
 
         // toggle() возвращает массив с ключами 'attached' и 'detached'
-        $isFavorite = count($result['attached']) > 0;
+        $isFavorite = $user->favoriteMovies()->contains($validated['movieId']);
 
         // 3. Возвращаем понятный статус для фронтенда
         return response()->json([

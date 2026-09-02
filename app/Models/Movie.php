@@ -31,19 +31,20 @@ class Movie extends Model
     ];
 
     //сработает перед созданием бд
-    protected static function boot()
-    {
-        parent::boot();
+    // protected static function boot()
+    // {
+    //     parent::boot();
 
-        static::creating(function ($movie) {
-            if (empty($movie->slug)) {
-                $title = !empty($movie->title) ? $movie->title : 'movie-' . Str::random(6);
+    //     static::creating(function ($movie) {
+    //         if (empty($movie->slug)) {
+    //             $title = !empty($movie->title) ? $movie->title : 'movie-' . Str::random(6);
 
-                $movie->slug = Str::slug($title);
-            }
-        });
-    }
-    // забирает первые цифры до первого нечислового символа
+    //             $movie->slug = Str::slug($title);
+    //         }
+    //     });
+    // }
+    
+    // забирает первые цифры до первого нечислового символа (url)
     public function resolveRouteBinding($value, $field = null)
     {
         // intval("15-movie-15") заберет первые цифры "15"
