@@ -53,17 +53,7 @@ Route::post('/user/update-favorite', [FavoriteController::class,'toggle']);
 
 Route::get('/user/bookings', [BookingController::class,'index']);
 
-Route::get('/booking/seats/{show}', function (Show $show) {
-    $occupiedSeats = $show->tickets()
-        ->pluck('seat_id')
-        ->toArray();
-
-    // Возвращаем данные. Laravel сам превратит этот массив в JSON
-    return response()->json([
-        'success' => true,
-        'occupiedSeats' => $occupiedSeats
-    ]);
-});
+Route::get('/booking/seats/{show}', [BookingController::class,'seats']);
 
 Route::post('/booking/create', [BookingController::class,'create']);
 

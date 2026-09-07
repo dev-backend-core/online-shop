@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\BookingTicketsAction;
 use App\Actions\GetUserBookingAction;
+use App\Events\BookingCreated;
 use App\Http\Controllers\Controller;
+use App\Jobs\ExpireBookingJob;
 use App\Models\Show;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+
 
 class BookingController extends Controller
 {
@@ -19,42 +22,59 @@ class BookingController extends Controller
 
         $bookings = $userBooking->execute($tickets);
 
+
         return response()->json([
             'success' => true,
             'bookings' => $bookings
         ]);
     }
 
-    public function create(Request $request)
+    public function create(Request $request,BookingTicketsAction $action)
     {
-        //!!! не забудь про двойное бронирование
-
+        //+ redis atomic locks не забудь
         $validated = $request->validate([
             'showId'=>'required|integer|exists:shows,id',
             'selectedSeats'   => 'required|array|min:1',
             'selectedSeats.*' => 'required|integer|exists:seats,id',
         ]);
 
-        return DB::transaction(function () use ($validated, $request) {
-            $show = Show::findOrFail($validated['showId']);
-            $price = $show->price;
+        try {
+           
+            $tickets = $action->execute(
+                $request->user(),
+                $validated['showId'],
+                $validated['selectedSeats']
+            );
 
-            $ticketsData = array_map(function ($seatId) use ($validated,$price) {
-                return [
-                    'show_id' => $validated['showId'],
-                    'seat_id' => $seatId,
-                    'status'  => 'reserved',
-                    'price'   => $price,
-                ];
-            }, $validated['selectedSeats']);
-        
-            $tickets = $request->user()->tickets()->createMany($ticketsData);
+            ExpireBookingJob::dispatch($tickets)
+            ->onQueue('high')
+            ->delay(now()->addMinutes(10));
+
+            BookingCreated::dispatch($tickets);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Места успешно забронированы!',
                 'tickets' => $tickets
             ], 201);
-        });
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 409); 
+        }
+    }
+
+    public function seats(Show $show)
+    {
+        $occupiedSeats = $show->tickets()
+            ->pluck('seat_id')
+            ->toArray();
+
+        return response()->json([
+            'success' => true,
+            'occupiedSeats' => $occupiedSeats
+        ]);
     }
 }

@@ -17,7 +17,10 @@ return new class extends Migration
             $table->foreignId('show_id')->constrained()->cascadeOnDelete();
             $table->foreignId('seat_id')->constrained()->cascadeOnDelete();
             $table->enum('status', ['reserved', 'paid', 'cancelled'])->default('reserved');
+
+            $table->boolean('reminder_sent')->default(false);
             $table->decimal('price', 8, 2);
+            
             $table->timestamps();
             $table->unique(['show_id', 'seat_id']);
         });
@@ -28,6 +31,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('tickets');
+        Schema::enableForeignKeyConstraints();
     }
 };

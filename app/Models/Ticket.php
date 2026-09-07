@@ -15,6 +15,7 @@ class Ticket extends Model
         'seat_id',
         'status',
         'price',
+        'reminder_sent'
     ];
 
     protected $casts = [
