@@ -46,4 +46,10 @@ return [
         'url' => 'https://kinopoiskapiunofficial.tech/api',
     ],
 
+    'stripe' =>[
+        'secret' => env('SECRET_KEY'),
+        'publishable' => env('PUBLISHABLE_KEY'),
+        'webhook' => env('WEBHOOK_SECRET')
+    ]
+
 ];

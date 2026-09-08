@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\BookingTicketsAction;
+use App\Actions\CreateStripeCheckoutSessionAction;
 use App\Actions\GetUserBookingAction;
 use App\Events\BookingCreated;
 use App\Http\Controllers\Controller;
@@ -29,7 +30,7 @@ class BookingController extends Controller
         ]);
     }
 
-    public function create(Request $request,BookingTicketsAction $action)
+    public function create(Request $request,BookingTicketsAction $action,CreateStripeCheckoutSessionAction $stripe)
     {
         //+ redis atomic locks не забудь
         $validated = $request->validate([
@@ -46,16 +47,23 @@ class BookingController extends Controller
                 $validated['selectedSeats']
             );
 
-            ExpireBookingJob::dispatch($tickets)
+            // $tickets->load(['show.movie', 'seat']);
+
+            $url = $stripe->execute($tickets);
+            
+            // передать сразу массив id и вызвать в зависимости от ответа stripe
+
+            ExpireBookingJob::dispatch($tickets->pluck('id')->toArray())
             ->onQueue('high')
             ->delay(now()->addMinutes(10));
 
             BookingCreated::dispatch($tickets);
-
+ 
             return response()->json([
                 'success' => true,
                 'message' => 'Места успешно забронированы!',
-                'tickets' => $tickets
+                'tickets' => $tickets,
+                'url' => $url
             ], 201);
 
         } catch (\Exception $e) {

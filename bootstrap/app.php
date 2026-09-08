@@ -18,9 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // 2. Настраиваем CORS прямо здесь
         $middleware->validateCsrfTokens(except: [
-            // если нужны исключения
+            'api/stripe/webhook',
+            'stripe/webhook',
         ]);
     })
+ 
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),

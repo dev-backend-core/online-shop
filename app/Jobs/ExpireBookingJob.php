@@ -14,10 +14,10 @@ class ExpireBookingJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-   /**
-     * @param Collection $tickets
-     */
-    public function __construct(public Collection $tickets)
+//    /**
+//      * @param Collection $tickets
+//      */
+    public function __construct(public array $ticketIds)
     {}
 
     /**
@@ -26,9 +26,9 @@ class ExpireBookingJob implements ShouldQueue
     public function handle(): void
     {
        // Выбираем только ID переданных билетов
-        $ticketIds = $this->tickets->pluck('id');
+        // $ticketIds = $this->tickets->pluck('id');
 
-        Ticket::whereIn('id', $ticketIds)
+        Ticket::whereIn('id', $this->ticketIds)
         ->where('status', 'reserved')
         ->update(['status' => 'cancelled']);
        

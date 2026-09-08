@@ -167,11 +167,11 @@ const SeatLayout = () => {
         },
       );
 
-      // if (data.success) {
-      //   window.location.href = data.url;
-      // } else {
-      //   toast.error(data.message);
-      // }
+      if (data.success) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data.message);
+      }
     } catch (error) {
       toast.error(error.message);
     }

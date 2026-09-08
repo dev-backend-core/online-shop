@@ -7,10 +7,8 @@ use App\Http\Controllers\Api\SeatController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
-use App\Models\Movie;
-use App\Models\Seat;
-use App\Models\Show;
-use App\Models\Ticket;
+use App\Http\Controllers\StripeWebhookController;
+
 use Illuminate\Support\Facades\Route;
 
 use Illuminate\Support\Facades\Http;
@@ -32,14 +30,12 @@ Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle']);
 
 Route::get('/auth/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
 
-// Закрытые маршруты (требуют заголовок Authorization)
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
-    
-    // Твой CRUD блога теперь защищен
-    // Route::apiResource('posts', PostController::class);
-});
+
+// Route::middleware('auth:sanctum')->group(function () {
+//     Route::post('/logout', [AuthController::class, 'logout']);
+// });
 
 Route::get('/show/all',[MovieController::class,'index']);
 
