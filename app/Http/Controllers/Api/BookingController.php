@@ -10,6 +10,8 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ExpireBookingJob;
 use App\Models\Show;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Ticket;
 
 
 class BookingController extends Controller
@@ -18,11 +20,11 @@ class BookingController extends Controller
     {
         $tickets = $request->user()
             ->tickets()
+            ->where('status','!=','cancelled')
             ->with(['show.movie'])
             ->get();
 
         $bookings = $userBooking->execute($tickets);
-
 
         return response()->json([
             'success' => true,
@@ -47,22 +49,16 @@ class BookingController extends Controller
                 $validated['selectedSeats']
             );
 
-            // $tickets->load(['show.movie', 'seat']);
+            $ticketIds = $tickets->pluck('id')->toArray();
+
+            ExpireBookingJob::dispatch($ticketIds)
+            ->delay(now()->addMinutes(10));
 
             $url = $stripe->execute($tickets);
             
-            // передать сразу массив id и вызвать в зависимости от ответа stripe
-
-            ExpireBookingJob::dispatch($tickets->pluck('id')->toArray())
-            ->onQueue('high')
-            ->delay(now()->addMinutes(10));
-
-            BookingCreated::dispatch($tickets);
- 
             return response()->json([
                 'success' => true,
                 'message' => 'Места успешно забронированы!',
-                'tickets' => $tickets,
                 'url' => $url
             ], 201);
 
@@ -84,5 +80,30 @@ class BookingController extends Controller
             'success' => true,
             'occupiedSeats' => $occupiedSeats
         ]);
+    }
+
+    public function createStripeSession(Request $request,CreateStripeCheckoutSessionAction $action)
+    {
+        $validated = $request->validate([
+            'booking_date' => 'required|string',
+        ]);
+
+        $tickets = Ticket::where('user_id', Auth::id())
+        ->where('created_at',$validated['booking_date'])
+        ->where('status', 'reserved')
+        ->get();
+
+        if($tickets->isEmpty()){
+            return response()->json([
+                'message' => 'Забронированные билеты не найдены',
+                'a'=> $validated['booking_date']
+            ], 404);
+        }
+
+        $url = $action->execute($tickets);
+
+        return response()->json([
+            'url' => $url
+        ], 201);
     }
 }

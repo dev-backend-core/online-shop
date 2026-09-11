@@ -37,7 +37,7 @@ class GetUserBookingAction
 
             return [
                 
-                'booking_date' => $firstTicket->created_at->format('Y-m-d H:i'),
+                'booking_date' => $firstTicket->created_at->format('Y-m-d H:i:s'),
                 'total_price'  => $group->sum('price'), 
                 'total_seats'  => $group->count(),       
                 'seats_list'   => $seatsList, 

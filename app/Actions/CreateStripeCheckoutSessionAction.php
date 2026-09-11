@@ -25,7 +25,7 @@ class CreateStripeCheckoutSessionAction
                     'product_data' => [
                         'name' => "Билет: {$ticket->show->movie->title} (Ряд {$ticket->seat->row_number}, Место {$ticket->seat->seat_number})",
                     ],
-                    'unit_amount' => (int) ($ticket->price * 100), // Цена в центaх
+                    'unit_amount' => (int) ($ticket->price * 100), 
                 ],
                 'quantity' => 1,
             ];
@@ -33,6 +33,7 @@ class CreateStripeCheckoutSessionAction
 
         // 3. Создаем сессию в Stripe
         $session = Session::create([
+            'expires_at' => time() + (30 * 60),
             'payment_method_types' => ['card'],
             'line_items' => $lineItems,
             'mode' => 'payment',
@@ -40,8 +41,8 @@ class CreateStripeCheckoutSessionAction
             'metadata' => [
                 'ticket_ids' => $tickets->pluck('id')->implode(',')
             ],
-            'success_url' => config('app.url'),
-            'cancel_url' => config('app.url'),
+            'success_url' => config('app.url') . ':5174/my-bookings',
+            'cancel_url' => config('app.url') . ':5174',
         ]);
 
         // Возвращаем сгенерированную ссылку

@@ -46,16 +46,21 @@ class BookingSuccessfulNotification extends Notification
 
         // Выводим список забронированных мест
         foreach ($this->tickets as $ticket) {
-            $mail->line("• Место ID: {$ticket->seat_id} | Сеанс ID: {$ticket->show_id} | Цена: {$ticket->price} руб.");
+            $mail->line("Ряд {$ticket->seat->row_number}, Место {$ticket->seat->seat_number} | Сеанс : {$ticket->show->movie->title} | Цена: {$ticket->price} $.");
         }
 
-        return $mail
-            ->line('---')
-            ->line('Ваш PDF-билет прикреплен к этому письму.')
-            ->attach($this->pdfPath, [
-                'as' => 'tickets.pdf',
-                'mime' => 'application/pdf',
-            ]);
+        $mail->line('---');
+
+        // Прикрепляем PDF только если путь не пустой и файл действительно существует на диске
+        if (!empty($this->pdfPath) && file_exists($this->pdfPath)) {
+            $mail->line('Ваш PDF-билет прикреплен к этому письму.')
+                ->attach($this->pdfPath, [
+                    'as' => 'tickets.pdf',
+                    'mime' => 'application/pdf',
+                ]);
+        }
+
+        return $mail;
            
     }
 

@@ -29,6 +29,20 @@ const MyBookings = () => {
     setIsLoading(false);
   };
 
+  const createStripeSession = async (bookingDate) => {
+    try {
+      const { data } = await api.post("/api/booking/createStripeSession", {
+        booking_date: bookingDate,
+      });
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       getMyBookings();
@@ -45,7 +59,9 @@ const MyBookings = () => {
       </div>
       <h1 className="text-lg font-semibold mb-4">My Bookings</h1>
 
-      {bookings.map((item, index) => (
+      {bookings.length === 0 
+      ? <p>Фильмов нет</p> 
+      : bookings.map((item, index) => (
         <div
           key={index}
           className="flex flex-col md:flex-row justify-between bg-primary/8 border border-primary/20 rounded-lg mt-4 p-2 max-w-3xl"
@@ -73,12 +89,12 @@ const MyBookings = () => {
                 {`$${item.total_price}`}
               </p>
               {item.status === 'reserved' &&  (
-                <Link
-                  to={item.paymentLink ?? ''}
+                <p
+                  onClick={() => createStripeSession((item.booking_date))}
                   className="bg-primary px-4 py-1.5 mb-3 text-sm rounded-full font-medium cursor-pointer"
                 >
                   Pay Now
-                </Link>
+                </p>
               )}
             </div>
             <div style={{width:'12rem'}} className="text-sm">
@@ -93,7 +109,9 @@ const MyBookings = () => {
             </div>
           </div>
         </div>
-      ))}
+      ))
+      }
+
     </div>
   ) : (
     <Loading />

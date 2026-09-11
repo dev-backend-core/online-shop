@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\CreateStripeCheckoutSessionAction;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\MovieController;
@@ -8,7 +9,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\StripeWebhookController;
-
+use App\Models\Ticket;
 use Illuminate\Support\Facades\Route;
 
 use Illuminate\Support\Facades\Http;
@@ -52,4 +53,6 @@ Route::get('/user/bookings', [BookingController::class,'index']);
 Route::get('/booking/seats/{show}', [BookingController::class,'seats']);
 
 Route::post('/booking/create', [BookingController::class,'create']);
+
+Route::post('/booking/createStripeSession',[BookingController::class,'createStripeSession']);
 

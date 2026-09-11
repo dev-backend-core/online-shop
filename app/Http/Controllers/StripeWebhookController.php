@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\BookingCreated;
 use App\Models\Ticket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -31,16 +32,20 @@ class StripeWebhookController extends Controller
 
         // 2. Обрабатываем тип события
         switch ($event->type) {
-            case 'payment_intent.succeeded':
+            case 'checkout.session.completed':
                 $paymentIntent = $event->data->object;
+                $rawTickets = $paymentIntent->metadata->ticket_ids ?? '';
+                $ticketIds = array_filter(explode(',', $rawTickets));
 
-                $ticketIds = json_decode($paymentIntent->metadata->ticket_ids ?? '[]');
+                if($paymentIntent->payment_status === 'paid' && !empty($ticketIds)){
 
-                if(!empty($ticketIds)){
+                   
+
                     Ticket::whereIn('id',$ticketIds)
                     ->update(['status' => 'paid']);
+
+                    BookingCreated::dispatch($ticketIds);
                 }
-                
                 // ТУТ ВАША ЛОГИКА ДЛЯ БИЛЕТОВ:
                 // - Найти заказ в БД по $paymentIntent->id или $paymentIntent->metadata->order_id
                 // - Изменить статус заказа на "paid" (Оплачен)
@@ -50,8 +55,15 @@ class StripeWebhookController extends Controller
                 Log::info('Stripe Payment Succeeded: ' . $paymentIntent->id);
                 break;
 
-            case 'payment_intent.payment_failed':
+            case 'checkout.session.expired':
                 $paymentIntent = $event->data->object;
+                $rawTickets = $paymentIntent->metadata->ticket_ids ?? '';
+                $ticketIds = array_filter(explode(',', $rawTickets));
+
+                if(!empty($ticketIds)){
+                    Ticket::whereIn('id',$ticketIds)
+                    ->update(['status' => 'cancelled']);
+                }
                 
                 // ТУТ ЛОГИКА ПРИ ОТМЕНЕ ПЛАТЕЖА:
                 // - Снять временную бронь с мест

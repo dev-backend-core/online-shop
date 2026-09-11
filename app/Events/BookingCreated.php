@@ -15,17 +15,17 @@ use Illuminate\Database\Eloquent\Collection;
 class BookingCreated
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
-
+    public array $tickets;
     /**
      * Create a new event instance.
      */
 
     /**
-     * @param Collection|array $tickets
+     * @param array $tickets
      */
-    public function __construct(public Collection|array $tickets)
+    public function __construct(array $tickets)
     {
-        //
+        $this->tickets = array_values($tickets);
     }
 
     /**

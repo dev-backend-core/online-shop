@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\BookingCreated;
+use App\Models\Ticket;
 use App\Notifications\BookingSuccessfulNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
@@ -10,26 +11,25 @@ use Illuminate\Queue\InteractsWithQueue;
 class SendBookingConfirmationListener implements ShouldQueue
 {
     use InteractsWithQueue;
-    /**
-     * Create the event listener.
-     */
+   
     public function __construct()
-    {
-        //
-    }
+    {}
 
     /**
      * Handle the event.
      */
     public function handle(BookingCreated $event): void
     {
-        $tickets = $event->tickets;
+        $ticketIds = $event->tickets;
 
-        if (empty($tickets) || $tickets->isEmpty()) {
+        if (empty($ticketIds)) {
             return;
         }
 
-        // Берем пользователя из первого билета (так как все билеты принадлежат одному юзеру)
+        $tickets = Ticket::with(['seat','show'])
+        ->whereIn('id',$ticketIds)
+        ->get();
+
         $firstTicket = $tickets->first();
         $user = $firstTicket->user; 
 

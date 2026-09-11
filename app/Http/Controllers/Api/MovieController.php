@@ -10,12 +10,18 @@ use App\Models\Show;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 use Illuminate\Http\Client\Pool;
+use Illuminate\Support\Facades\Cache;
 
 class MovieController extends Controller
 {
     
     public function index(SyncMoviesAction $syncAction)
     {
+
+        Cache::remember('all_movies',now()->addHours(24), function () {
+            
+        });
+
         $moviesInDb = Movie::all();
 
         if ($moviesInDb->isNotEmpty()) {
