@@ -20,7 +20,7 @@ class SendMovieRemindersCommand extends Command
         $startWindow = now()->addHours(2)->subMinutes(5);
         $endWindow = now()->addHours(2)->addMinutes(5);
 
-        $tickets = Ticket::with('user','shows')
+        $tickets = Ticket::with('user','show')
         ->where('status','paid')
         ->where('reminder_sent',false)
         ->whereHas('show', function ($query) use ($startWindow, $endWindow) {

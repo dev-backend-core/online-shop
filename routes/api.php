@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\CreateStripeCheckoutSessionAction;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\MovieController;
@@ -9,22 +8,20 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\StripeWebhookController;
-use App\Models\Ticket;
 use Illuminate\Support\Facades\Route;
 
-use Illuminate\Support\Facades\Http;
-use Carbon\Carbon;
-use Illuminate\Http\Client\Pool;
 
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout',[AuthController::class,'logout'])->middleware(['web', 'auth:sanctum']);;
+Route::middleware('throttle:auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+});
 
+Route::post('/logout',[AuthController::class,'logout'])->middleware(['auth:sanctum']);
 
 // Вход через Google
 Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle']);
@@ -34,13 +31,10 @@ Route::get('/auth/callback', [GoogleAuthController::class, 'handleGoogleCallback
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
 
-// Route::middleware('auth:sanctum')->group(function () {
-//     Route::post('/logout', [AuthController::class, 'logout']);
-// });
 
 Route::get('/show/all',[MovieController::class,'index']);
 
-Route::get('/show/{movie}', [MovieController::class,'movieDetails']);
+Route::get('/show/{id}', [MovieController::class,'movieDetails']);
 
 Route::get('/seats',[SeatController::class,'index']);
 
@@ -52,7 +46,9 @@ Route::get('/user/bookings', [BookingController::class,'index']);
 
 Route::get('/booking/seats/{show}', [BookingController::class,'seats']);
 
-Route::post('/booking/create', [BookingController::class,'create']);
+Route::post('/booking/create', [BookingController::class,'create'])->middleware(['auth:sanctum', 'throttle:booking']);
 
 Route::post('/booking/createStripeSession',[BookingController::class,'createStripeSession']);
+
+Route::post('/movie/search',[MovieController::class,'searchMovie']);
 

@@ -1,4 +1,4 @@
-import { useEffect, useState,useMemo } from "react";
+import { useEffect, useState,useMemo,useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { assets } from "../assets/assets";
 import Loading from "../components/Loading";
@@ -137,12 +137,31 @@ const SeatLayout = () => {
     );
   };
 
-  const getOccupiedSeats = async () => {
+  // const getOccupiedSeats = async () => {
+  //   try {
+  //     //id сеанса 
+  //     const { data } = await axios.get(
+  //       `/api/booking/seats/${selectedTime.id}`
+  //     );
+  //     if (data.success) {
+  //       setOccupiedSeats(data.occupiedSeats);
+  //     } else {
+  //       toast.error(data.message);
+  //     }
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
+
+  const getOccupiedSeats = useCallback(async () => {
+    if (!selectedTime?.id) return;
+
     try {
-      //id сеанса 
+      // Добавляем timestamp (_t), чтобы Axios и браузер ТОЧНО не кэшировали ответ
       const { data } = await axios.get(
-        `/api/booking/seats/${selectedTime.id}`
+        `/api/booking/seats/${selectedTime.id}?_t=${Date.now()}`
       );
+      
       if (data.success) {
         setOccupiedSeats(data.occupiedSeats);
       } else {
@@ -151,7 +170,26 @@ const SeatLayout = () => {
     } catch (error) {
       console.log(error);
     }
-  };
+  }, [selectedTime?.id]);
+
+  useEffect(() => {
+    getOccupiedSeats();
+
+    // 2. Слушаем возврат по кнопке "Назад" (BFcache)
+    const handlePageShow = (event) => {
+      // event.persisted === true означает, что страница была восстановлена из кэша браузера
+      if (event.persisted) {
+        getOccupiedSeats();
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [getOccupiedSeats]);
+  
 
   const bookTickets = async () => {
     try {

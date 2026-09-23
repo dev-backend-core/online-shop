@@ -2,87 +2,86 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\SearchMoviesAction;
 use App\Actions\SyncMoviesAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MovieDetailsRequest;
 use Illuminate\Http\Request;
 use App\Models\Movie;
-use App\Models\Show;
-use Illuminate\Support\Facades\Http;
-use Carbon\Carbon;
-use Illuminate\Http\Client\Pool;
+use App\Services\KinopoiskService;
 use Illuminate\Support\Facades\Cache;
+
+
 
 class MovieController extends Controller
 {
     
     public function index(SyncMoviesAction $syncAction)
     {
-
-        Cache::remember('all_movies',now()->addHours(24), function () {
+        if (Movie::count() === 0) {
+            $synced = $syncAction->execute();
             
+            if (!$synced && Movie::count() === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Сервис афиши временно недоступен',
+                    'shows'   => []
+                ], 503);
+            }
+        }
+
+        $movies = Cache::remember('all_movies', now()->addHours(24), fn () => Movie::all()->toArray());
+
+        return response()->json([
+            'success' => true,
+            'shows'   => $movies
+        ]);
+    }
+
+    public function movieDetails(MovieDetailsRequest $request,SearchMoviesAction $action)
+    {
+        $id = (int) $request->validated('id');
+
+        $movie = Movie::with('shows')
+            ->where('id', $id)
+            ->orWhere('kinopoisk_id', $id)
+            ->first();
+
+       if (!$movie) {
+            $movie = $action->execute($id);;
+            
+            if (!$movie) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Сервис афиши временно недоступен',
+                    'movie'   => []
+                ], 503);
+            }
+        }
+
+        $movieData = Cache::remember("movie_details_{$id}", now()->addHours(24), function () use ($movie) {
+            return $movie->load('shows')->toArray();
         });
 
-        $moviesInDb = Movie::all();
-
-        if ($moviesInDb->isNotEmpty()) {
-            return response()->json([
-                'success' => true,
-                'shows' => $moviesInDb
-            ]);
-        }
-
-        if (Movie::count() === 0) {
-            $syncAction->execute();
-        }
-
         return response()->json([
             'success' => true,
-            'shows' => Movie::all()
+            'movie'   => $movieData,
         ]);
     }
 
-    public function movieDetails(Movie $movie)
+    
+    public function searchMovie(Request $request,KinopoiskService $kinopoisk)
     {
-         // $movie = Movie::findOrFail($id);
-        // $shows = $movie->shows;
-        $movie->load('shows');
+        $request->validate([
+            'searchValue' => 'required|string'
+        ]);
 
-        // Возвращаем данные. Laravel сам превратит этот массив в JSON
+        $movies = $kinopoisk->searchMovies($request->searchValue);
+
         return response()->json([
             'success' => true,
-            'movie' => $movie,
+            'source' => 'kinopoisk',
+            'movies' =>  $movies,
         ]);
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
     }
 }

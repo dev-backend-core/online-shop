@@ -17,6 +17,7 @@ class StripeWebhookController extends Controller
         $sigHeader = $request->header('Stripe-Signature');
         $endpointSecret = config('services.stripe.webhook');
 
+
         try {
             // 1. Проверяем подпись вебхука от Stripe
             $event = Webhook::constructEvent(
@@ -28,6 +29,8 @@ class StripeWebhookController extends Controller
         } catch (SignatureVerificationException $e) {
             // Невалидная подпись (секрет whsec_ не совпал)
             return response()->json(['error' => 'Invalid signature'], 400);
+        }catch(\Throwable $e){
+            return response()->json(['error' => 'Invalid signature or payload'], 400);
         }
 
         // 2. Обрабатываем тип события
@@ -39,19 +42,12 @@ class StripeWebhookController extends Controller
 
                 if($paymentIntent->payment_status === 'paid' && !empty($ticketIds)){
 
-                   
-
                     Ticket::whereIn('id',$ticketIds)
                     ->update(['status' => 'paid']);
 
                     BookingCreated::dispatch($ticketIds);
                 }
-                // ТУТ ВАША ЛОГИКА ДЛЯ БИЛЕТОВ:
-                // - Найти заказ в БД по $paymentIntent->id или $paymentIntent->metadata->order_id
-                // - Изменить статус заказа на "paid" (Оплачен)
-                // - Перевести забронированные билеты в статус "куплены"
-                // - Отправить email с билетами пользователю
-
+               
                 Log::info('Stripe Payment Succeeded: ' . $paymentIntent->id);
                 break;
 

@@ -101,7 +101,8 @@ export const AppProvider = ({ children }) => {
     fetchFavoriteMovies,
     image_base_url,
     isOpen,
-    setIsOpen
+    setIsOpen,
+    fetchShows
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
