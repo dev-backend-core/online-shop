@@ -20,7 +20,6 @@ const MovieDetails = () => {
   const {
     shows,
     axios,
-    getToken,
     user,
     fetchFavoriteMovies,
     favoriteMovies,
@@ -46,9 +45,6 @@ const MovieDetails = () => {
       const { data } = await api.get(`/api/show/${id}`);
       if (data.success) {
         setShow(data);
-        // console.log(Object.entries(data))
-        //  console.log(Object.keys(dateTime))
-        // console.log(Object.keys(data['movie'].shows))
       }
     } catch (error) {
       console.log(error);

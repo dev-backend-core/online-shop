@@ -22,7 +22,7 @@ export const AppProvider = ({ children }) => {
   const navigate = useNavigate();
 
   // Достаём токен авторизации из localStorage (замена Clerk)
-  const getToken = () => localStorage.getItem("token");
+
 
   const fetchIsAdmin = async () => {
 
@@ -90,7 +90,6 @@ export const AppProvider = ({ children }) => {
     fetchIsAdmin,
     user,
     setUser,
-    getToken,
     navigate,
     isAdmin,
     setIsAdmin,

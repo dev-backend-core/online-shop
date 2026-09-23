@@ -27,7 +27,7 @@ const SeatLayout = () => {
 
   const navigate = useNavigate();
 
-  const { axios, getToken, user } = useAppContext();
+  const { axios, user } = useAppContext();
 
   const getShow = async () => {
     try {
@@ -137,21 +137,7 @@ const SeatLayout = () => {
     );
   };
 
-  // const getOccupiedSeats = async () => {
-  //   try {
-  //     //id сеанса 
-  //     const { data } = await axios.get(
-  //       `/api/booking/seats/${selectedTime.id}`
-  //     );
-  //     if (data.success) {
-  //       setOccupiedSeats(data.occupiedSeats);
-  //     } else {
-  //       toast.error(data.message);
-  //     }
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
+
 
   const getOccupiedSeats = useCallback(async () => {
     if (!selectedTime?.id) return;

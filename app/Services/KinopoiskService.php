@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services;
+
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 use Illuminate\Http\Client\Pool;
@@ -18,7 +19,8 @@ class KinopoiskService
         $this->baseUrl = config('services.kinopoisk.url');
     }
 
-    public function getPremieres(){
+    public function getPremieres()
+    {
 
         $premieresResponse = Http::timeout(5)->withHeaders([
             'X-API-KEY' => $this->apiKey,
@@ -48,34 +50,37 @@ class KinopoiskService
             ? $response->json() 
             : [];
 
-            $rating = $details['ratingImdb'] ?? $details['ratingKinopoisk'] ?? null;
-            $finalRating = ($rating > 0) ? (float) $rating : round(mt_rand(50, 71) / 10, 1);
+            return self::fromKinopoiskArray($show, $details);
 
-            $title = head(array_filter([
-                $show['nameEn'] ?? null,
-                $show['nameRu'] ?? null,
-            ], 'filled')) ?: 'Без Названия';
+            // $rating = $details['ratingImdb'] ?? $details['ratingKinopoisk'] ?? null;
+            // $finalRating = ($rating > 0) ? (float) $rating : round(mt_rand(50, 71) / 10, 1);
 
-            $baseSlug = Str::slug($title, '-', 'ru');
+            // $title = head(array_filter([
+            //     $show['nameEn'] ?? null,
+            //     $show['nameRu'] ?? null,
+            // ], 'filled')) ?: 'Без Названия';
 
-            if (empty($baseSlug)) {
-                $baseSlug = 'movie';
-            }
+            // $baseSlug = Str::slug($title, '-', 'ru');
 
-            $slug = "{$baseSlug}-{$show['kinopoiskId']}";
+            // if (empty($baseSlug)) {
+            //     $baseSlug = 'movie';
+            // }
 
-            return [
-                'kinopoisk_id'       => $show['kinopoiskId'],
-                'title'              => $title,
-                'slug'               => $slug,
-                'description'        => $details['shortDescription'] ?? $details['description'] ?? 'Описание отсутствует',
-                'duration_min'       => $show['duration'] ?? null,
-                'poster_url'         => $show['posterUrl'] ?? null,
-                'poster_preview_url' => $show['posterUrlPreview'] ?? null,
-                'rating'             => $finalRating,
-                'year'               => $show['year'] ?? null,
-                'genres'             => array_column($show['genres'] ?? [], 'genre'),
-            ];
+            // $slug = "{$baseSlug}-{$show['kinopoiskId']}";
+
+            // return [
+            //     'kinopoisk_id'       => $show['kinopoiskId'],
+            //     'title'              => $title,
+            //     'slug'               => $slug,
+            //     'description'        => $details['shortDescription'] ?? $details['description'] ?? 'Описание отсутствует',
+            //     'duration_min'       => $show['duration'] ?? null,
+            //     'poster_url'         => $show['posterUrl'] ?? null,
+            //     'poster_preview_url' => $show['posterUrlPreview'] ?? null,
+            //     'rating'             => $finalRating,
+            //     'year'               => $show['year'] ?? null,
+            //     'genres'             => array_column($show['genres'] ?? [], 'genre'),
+            // ];
+
         })->toArray();
     }
 
@@ -102,34 +107,37 @@ class KinopoiskService
 
         return collect($films)->take(5)->map(function ($show)
         {
-            $rating = $show['rating'] ?? null;
-            $finalRating = ($rating > 0) ? (float) $rating : round(mt_rand(50, 71) / 10, 1);
+            return self::fromKinopoiskArray($show);
 
-            $title = head(array_filter([
-                $show['nameEn'] ?? null,
-                $show['nameRu'] ?? null,
-            ], 'filled')) ?: 'Без названия';
+            // $rating = $show['rating'] ?? null;
+            // $finalRating = ($rating > 0) ? (float) $rating : round(mt_rand(50, 71) / 10, 1);
 
-            $baseSlug = Str::slug($show['nameEn'], '-', 'ru');
+            // $title = head(array_filter([
+            //     $show['nameEn'] ?? null,
+            //     $show['nameRu'] ?? null,
+            // ], 'filled')) ?: 'Без названия';
 
-            if (empty($baseSlug)) {
-                $baseSlug = 'movie';
-            }
+            // $baseSlug = Str::slug($show['nameEn'], '-', 'ru');
 
-            $slug = "{$baseSlug}-{$show['filmId']}";
+            // if (empty($baseSlug)) {
+            //     $baseSlug = 'movie';
+            // }
 
-            return 
-            [
-                'kinopoisk_id'       => $show['filmId'],
-                'title'              => $title,
-                'slug'               => $slug,
-                'duration_min'       => $this->parseDurationToMinutes($show['filmLength'] ?? null),
-                'poster_url'         => $show['posterUrl'] ?? null,
-                'poster_preview_url' => $show['posterUrlPreview'] ?? null,
-                'rating'             => $finalRating,
-                'year'               => is_numeric($show['year']) ? (int) $show['year'] : 'год не указан',
-                'genres'             => array_column($show['genres'] ?? [], 'genre'),
-            ];
+            // $slug = "{$baseSlug}-{$show['filmId']}";
+
+            // return 
+            // [
+            //     'kinopoisk_id'       => $show['filmId'],
+            //     'title'              => $title,
+            //     'slug'               => $slug,
+            //     'duration_min'       => $this->parseDurationToMinutes($show['filmLength'] ?? null),
+            //     'poster_url'         => $show['posterUrl'] ?? null,
+            //     'poster_preview_url' => $show['posterUrlPreview'] ?? null,
+            //     'rating'             => $finalRating,
+            //     'year'               => is_numeric($show['year']) ? (int) $show['year'] : 'год не указан',
+            //     'genres'             => array_column($show['genres'] ?? [], 'genre'),
+            // ];
+
         })->toArray();
     }
 
@@ -146,7 +154,7 @@ class KinopoiskService
         return $response->json();
     }
 
-    private function parseDurationToMinutes($rawDuration): ?int
+    private static function parseDurationToMinutes($rawDuration): ?int
     {
         if (empty($rawDuration)) {
             return 135;
@@ -164,6 +172,47 @@ class KinopoiskService
             return ($hours * 60) + $minutes;
         }
 
-        return null;
+        return 135;
+    }
+
+    public static function fromKinopoiskArray(array $show, array $details = []): array
+    {
+        // Объединяем детали и основные данные
+        $data = array_merge($show, $details);
+        $kinopoiskId = $data['kinopoiskId'] ?? $data['filmId'] ?? null;
+
+        // 1. Вычисляем Title
+        $title = head(array_filter([
+            $data['nameEn'] ?? null,
+            $data['nameRu'] ?? null,
+        ], 'filled')) ?: null;
+
+        // 2. Вычисляем Slug
+        $baseSlug = Str::slug($title, '-', 'ru');
+        if (empty($baseSlug)) {
+            $baseSlug = 'movie';
+        }
+        $slug = "{$baseSlug}-{$kinopoiskId}";
+
+        // 3. Вычисляем Rating
+        $rating = $data['ratingImdb'] ?? $data['ratingKinopoisk'] ?? $data['rating'] ?? null;
+        $finalRating = ($rating > 0) ? (float) $rating : round(mt_rand(50, 71) / 10, 1);
+
+        // 4. Длительность фильма
+        $rawDuration = $data['filmLength'] ?? $data['duration'] ?? null;
+        $durationMin = self::parseDurationToMinutes($rawDuration);
+
+        return [
+            'kinopoisk_id'       => $kinopoiskId,
+            'title'              => $title ?? 'Без названия',
+            'slug'               => $slug,
+            'description'        => $data['shortDescription'] ?? $data['description'] ?? 'Описание отсутствует',
+            'duration_min'       => $durationMin,
+            'poster_url'         => $data['posterUrl'] ?? null,
+            'poster_preview_url' => $data['posterUrlPreview'] ?? null,
+            'rating'             => $finalRating,
+            'year'               => is_numeric($data['year'] ?? null) ? (int) $data['year'] : null,
+            'genres'             => array_column($data['genres'] ?? [], 'genre'),
+        ];
     }
 }

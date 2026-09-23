@@ -34,7 +34,7 @@ class BookingController extends Controller
 
     public function create(Request $request,BookingTicketsAction $action,CreateStripeCheckoutSessionAction $stripe)
     {
-        //+ redis atomic locks не забудь
+       
         $validated = $request->validate([
             'showId'=>'required|integer|exists:shows,id',
             'selectedSeats'   => 'required|array|min:1',

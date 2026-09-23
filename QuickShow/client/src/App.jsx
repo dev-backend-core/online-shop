@@ -8,10 +8,6 @@ import MyBookings from "./pages/MyBookings";
 import Favorite from "./pages/Favorite";
 import { Toaster } from "react-hot-toast";
 import Footer from "./components/Footer";
-import Dashboard from "./pages/admin/Dashboard";
-import AddShows from "./pages/admin/AddShows";
-import ListShows from "./pages/admin/ListShows";
-import ListBookings from "./pages/admin/ListBookings";
 import Loading from "./components/Loading";
 import { AuthModal } from "./components/AuthModal";
 import { useAppContext } from "./context/AppContext";
@@ -32,19 +28,10 @@ const App = () => {
         <Route path="/movies" element={<Movies />} />
         <Route path="/movies/:id" element={<MovieDetails />} />
         <Route path="/movies/:id/:date" element={<SeatLayout />} />
-       
         
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/loading/:nextUrl" element={<Loading />} />
         <Route path="/favorite" element={<Favorite />} />
-
-        {/* Admin Routes */}
-        {/* <Route>
-          <Route index element={<Dashboard />} />
-          <Route path="add-shows" element={<AddShows />} />
-          <Route path="list-shows" element={<ListShows />} />
-          <Route path="list-bookings" element={<ListBookings />} />
-        </Route> */}
       </Routes>
       {!isAdminRoute && <Footer />}
     </>

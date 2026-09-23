@@ -2,12 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Actions\SearchMoviesAction;
 use App\Actions\SyncMoviesAction;
+use App\Models\Movie;
 use App\Services\KinopoiskService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
+use Mockery;
+use Mockery\MockInterface;
 // use Illuminate\Console\Scheduling\Event;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -131,8 +137,8 @@ class FetchDailyDataCommandTest extends TestCase
         $result = $service->getPremieres();
         // dd($result);
       
-        $this->assertEquals('bez-nazvaniya-999', $result[0]['slug']);
-        $this->assertEquals('Без Названия', $result[0]['title']);
+        $this->assertEquals('movie-999', $result[0]['slug']);
+        $this->assertEquals('Без названия', $result[0]['title']);
         // $this->assertNull($result[0]['title']);
 
         // Проверяем, что рейтинг сгенерировался в допустимом диапазоне 5.0 - 7.1
@@ -142,30 +148,51 @@ class FetchDailyDataCommandTest extends TestCase
 
     public function test_sync_action_saves_premieres_to_database(): void
     {
+        Carbon::setTestNow('2026-10-01 12:00:00');
+
         // 1. Мокаем внешние API-запросы
         Http::fake([
-            '*/v2.2/films/premieres*' => Http::response([
+            '*v2.2/films/premieres*' => Http::response([
                 'items' => [
-                    ['kinopoiskId' => 101, 'nameEn' => 'Интерстеллар', 'duration' => 169],
+                    [
+                        'kinopoiskId' => 101, 
+                        'nameEn' => 'Interstellar', 
+                        'nameRu' => 'Интерстеллар', 
+                        'duration' => 169
+                    ],
                 ]
             ], 200),
 
-            '*/v2.2/films/101' => Http::response([
-                'ratingKinopoisk' => 8.6,
-                'description'     => 'Тестовое описание',
+            '*v2.2/films/101*' => Http::response([
+                'ratingKinopoisk'  => 8.6,
+                'shortDescription' => 'Тестовое описание',
             ], 200),
         ]);
 
         // 2. Вызываем Action
         $action = app(SyncMoviesAction::class);
-        $action->execute();
+        $result = $action->execute();
+
+        // Проверяем, что экшен вернул true
+        $this->assertTrue($result);
 
         // 3. Проверяем реальное сохранение в БД
         $this->assertDatabaseHas('movies', [
             'kinopoisk_id' => 101,
-            'title'        => 'Интерстеллар',
+            'title'        => 'Interstellar',
             'rating'       => 8.6,
         ]);
+
+        $movie = Movie::where('kinopoisk_id', 101)->first();
+
+        // Проверяем, что у фильма создались 3 дефолтных сеанса
+        $this->assertCount(3, $movie->shows);
+
+        $this->assertDatabaseHas('shows', [
+            'movie_id'   => $movie->id,
+            'price'      => 350.00,
+        ]);
+      
     }
 
     public function test_search_movies_handles_missing_english_title_and_invalid_year(): void
@@ -188,7 +215,7 @@ class FetchDailyDataCommandTest extends TestCase
         
 
         $this->assertEquals('movie-777', $result[0]['slug']);
-        $this->assertEquals('год не указан',$result[0]['year']);
+        $this->assertEquals(null,$result[0]['year']);
         $this->assertEquals('Без названия',$result[0]['title']);
     }
 
@@ -197,7 +224,7 @@ class FetchDailyDataCommandTest extends TestCase
         Http::fake([
             '*/v2.1/films/search-by-keyword*' => Http::response([
                 'films' => [
-                    ['filmId' => 1, 'nameEn' => 'Movie 1', 'filmLength' => '2:15','year'   => 'N/A',],
+                    ['filmId' => 1, 'nameEn' => 'Movie 1', 'filmLength' => 100,'year'   => 'N/A',],
                 ]
             ], 200),
         ]);
@@ -205,6 +232,148 @@ class FetchDailyDataCommandTest extends TestCase
         $service = new KinopoiskService();
         $result = $service->searchMovies('Test');
 
-        $this->assertEquals(135, $result[0]['duration_min']); 
+        $this->assertEquals(100, $result[0]['duration_min']); 
+    }
+
+    public function test_generates_default_shows_for_given_movie(): void
+    {
+        
+        Carbon::setTestNow('2026-10-01 12:00:00');
+
+        // 2. Создаем тестовый фильм в БД через фабрику или вручную
+        $movie = Movie::factory()->create([
+            'title' => 'Тестовый Фильм',
+            'slug' => 'bebe-' . fake()->unique()->slug(),
+        ]);
+
+        // 3. Вызываем тестируемый метод
+        SearchMoviesAction::generateDefaultShows($movie);
+
+        // 4. Проверяем, что создано ровно 3 сеанса
+        $this->assertDatabaseCount('shows', 3);
+
+        // Проверяем первый сеанс (сегодня в 10:00 UTC -> 2026-10-01T10:00:00Z)
+        $this->assertDatabaseHas('shows', [
+            'movie_id'   => $movie->id,
+            'start_time' => '2026-10-01T10:00:00.000000Z',
+            'price'      => 350.00,
+        ]);
+
+        // Проверяем второй сеанс (завтра в 18:00 UTC -> 2026-10-02T18:00:00Z)
+        $this->assertDatabaseHas('shows', [
+            'movie_id'   => $movie->id,
+            'start_time' => '2026-10-02T18:00:00.000000Z',
+            'price'      => 350.00,
+        ]);
+
+        // Проверяем третий сеанс (завтра в 22:00 UTC -> 2026-10-02T22:00:00Z)
+        $this->assertDatabaseHas('shows', [
+            'movie_id'   => $movie->id,
+            'start_time' => '2026-10-02T22:00:00.000000Z',
+            'price'      => 350.00,
+        ]);
+    }
+
+    public function test_does_not_create_duplicate_shows_on_second_run(): void
+    {
+        Carbon::setTestNow('2026-10-01 12:00:00');
+
+        $movie = Movie::factory()->create(['slug' => 'bebe-' . fake()->unique()->slug(),]);
+
+        // Вызываем первый раз
+        SearchMoviesAction::generateDefaultShows($movie);
+
+        // Вызываем второй раз для того же фильма
+        SearchMoviesAction::generateDefaultShows($movie);
+
+        // Благодаря updateOrCreate кол-во записей всё равно должно остаться 3, а не стать 6
+        $this->assertDatabaseCount('shows', 3);
+    }
+
+    public function test_successfully_fetches_creates_movie_and_shows(): void
+    {
+        // 1. Помещаем что-то в кэш, чтобы проверить его очистку
+        Cache::put('all_movies', ['some_cached_data']);
+
+        // Mock сервиса Kinopoisk
+        $detailsData = [
+            'kinopoiskId'      => 555,
+            'nameRu'           => 'Начало',
+            'nameEn'           => 'Inception',
+            'shortDescription' => 'Фантастический триллер',
+            'ratingKinopoisk'  => 8.7,
+            'filmLength'       => 148,
+            'year'             => 2010,
+        ];
+
+        $this::mock(KinopoiskService::class, function (MockInterface $mock) use ($detailsData) {
+            $mock->shouldReceive('searchDetails')
+                ->once()
+                ->with(555)
+                ->andReturn($detailsData);
+        });
+
+        // 2. Вызываем Action
+        $action = app(SearchMoviesAction::class);
+        $movie = $action->execute(555);
+
+        // 3. Проверки (Assertions)
+        $this->assertInstanceOf(Movie::class, $movie);
+        $this->assertEquals('Inception', $movie->title);
+
+        // Проверяем запись фильма в БД
+        $this->assertDatabaseHas('movies', [
+            'kinopoisk_id' => 555,
+            'title'        => 'Inception',
+            'rating'       => 8.7,
+        ]);
+
+        // Проверяем, что дефолтные сеансы создались
+        $this->assertCount(3, $movie->shows);
+        $this->assertDatabaseHas('shows', [
+            'movie_id' => $movie->id,
+            'price'    => 350.00,
+        ]);
+
+        // Проверяем, что кэш был очищен
+        $this->assertFalse(Cache::has('all_movies'));
+    }
+
+    public function test_returns_null_when_kinopoisk_details_not_found(): void
+    {
+        $this::mock(KinopoiskService::class, function (MockInterface $mock) {
+            $mock->shouldReceive('searchDetails')
+                ->once()
+                ->with(999)
+                ->andReturn(null);
+        });
+
+        $action = app(SearchMoviesAction::class);
+        $result = $action->execute(999);
+
+        $this->assertNull($result);
+        $this->assertDatabaseCount('movies', 0);
+    }
+
+    public function test_catches_exception_and_logs_error_on_failure(): void
+    {
+        Log::spy(); // Отслеживаем логирование
+
+        $this::mock(KinopoiskService::class, function (MockInterface $mock) {
+            $mock->shouldReceive('searchDetails')
+                ->once()
+                ->with(777)
+                ->andThrow(new \Exception('Database error mockup'));
+        });
+
+        $action = app(SearchMoviesAction::class);
+        $result = $action->execute(777);
+
+        $this->assertNull($result);
+
+        // Проверяем, что ошибка записана в лог
+        Log::shouldHaveReceived('error')
+            ->once()
+            ->withArgs(fn ($message) => str_contains($message, 'Сбой транзакции при добавлении фильма ID 777'));
     }
 }

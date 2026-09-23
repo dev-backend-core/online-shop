@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
     {
        RateLimiter::for('booking', function (Request $request) {
             return Limit::perMinute(10)->by(
-                // Считаем лимит по ID пользователя, а если гость — по его IP-адресу
+                // Считает лимит по ID пользователя, а если гость — по его IP-адресу
                 $request->user()?->id ?: $request->ip()
             )->response(function () {
                 return response()->json([

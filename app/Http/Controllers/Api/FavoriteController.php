@@ -28,10 +28,9 @@ class FavoriteController extends Controller
         // toggle() возвращает массив с ключами 'attached' и 'detached'
         $isFavorite = $user->favoriteMovies()->contains($validated['movieId']);
 
-        // 3. Возвращаем понятный статус для фронтенда
+      
         return response()->json([
             'success' => true,
-            // 'is_favorite' => $isFavorite,
             'message' => $isFavorite ? 'Добавлено в избранное' : 'Удалено из избранного',
             'f' =>$result
         ]);
