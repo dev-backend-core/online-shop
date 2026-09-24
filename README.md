@@ -18,7 +18,7 @@ REST API сервис для онлайн-кинотеатра на Laravel и D
 ---
 
 ### 🐳 1. Docker-окружение
-Весь стек приложения (Laravel, MySQL, Redis, Workers) изолирован в Docker-контейнерах, что обеспечивает одинаковое окружение для разработки и запуска.
+* **Весь стек приложения (Laravel, MySQL, Redis, Workers) изолирован в Docker-контейнерах, что обеспечивает одинаковое окружение для разработки и запуска.
 
 ### 🧩 2. Вынос логики из контроллеров (Action & Static Classes & Services)
 * **Thin Controllers:** Вся бизнес-логика вынесена из контроллеров в изолированные Single-Responsibility **Action-классы** (`SyncMoviesAction`, `SearchMoviesAction` и др.).
@@ -58,28 +58,42 @@ REST API сервис для онлайн-кинотеатра на Laravel и D
 ## 🚀 Запуск проекта в Docker
 
 ### 1. Клонирование репозитория
-```bash
+```
 git clone [https://github.com/ТВОЙ_ЛОГИН/QuickShow.git](https://github.com/ТВОЙ_ЛОГИН/QuickShow.git)
 cd QuickShow
 
 2. Настройка файла окружения .env
 Скопируйте шаблонный файл .env.example в .env:
 
-Bash
 cp .env.example .env
+
 Примечание: Укажите свои тестовые ключи для Google OAuth, Stripe и Kinopoisk API в созданном файле .env.
 
-3. Запуск контейнеров (Laravel Sail)
-Bash
+3. Установка зависимостей Composer и запуск контейнеров
+Так как папка vendor не хранится в репозитории, установите зависимости и поднимите Docker-контейнеры:
+
+# Инициализация Composer через контейнер Sail
+docker run --rm \
+    -u "$(id -u):$(id -g)" \
+    -v "$(pwd):/opt" \
+    -w /opt \
+    laravelsail/php83-composer:latest \
+    composer install --ignore-platform-reqs
+
+# Запуск контейнеров в фоновом режиме
 ./vendor/bin/sail up -d
-4. Генерация ключа и выполнение миграций
-Bash
+
+4. Генерация ключа, миграции и сборка фронтенда
 ./vendor/bin/sail artisan key:generate
 ./vendor/bin/sail artisan migrate --seed
-5. Запуск воркера очередей и планировщика
-Bash
+
+# Установка и сборка React/CSS фронтенда
+./vendor/bin/sail npm install
+./vendor/bin/sail npm run build
+
+5. Запуск воркера очередей и планировщика (для работы авто-отмены и сбора афиши)
 ./vendor/bin/sail artisan queue:work
 ./vendor/bin/sail artisan schedule:work
+
 6. Запуск тестов
-Bash
 ./vendor/bin/sail artisan test
