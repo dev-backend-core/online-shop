@@ -58,23 +58,20 @@ REST API сервис для онлайн-кинотеатра на Laravel и D
 ## 🚀 Запуск проекта в Docker
 
 ### 1. Клонирование репозитория
-``
-git clone [https://github.com/ТВОЙ_ЛОГИН/QuickShow.git](https://github.com/ТВОЙ_ЛОГИН/QuickShow.git)
-cd QuickShow
+```bash
+git clone https://github.com/dev-backend-core/online-shop.git
+cd online-shop
 
-### 2. Настройка файла окружения .env
-``
+2. Настройка файла окружения .env
 Скопируйте шаблонный файл .env.example в .env:
 
 cp .env.example .env
-
 Примечание: Укажите свои тестовые ключи для Google OAuth, Stripe и Kinopoisk API в созданном файле .env.
 
-### 3. Установка зависимостей Composer и запуск контейнеров
-``
+3. Установка зависимостей Composer и запуск контейнеров
 Так как папка vendor не хранится в репозитории, установите зависимости и поднимите Docker-контейнеры:
 
-3.1 Инициализация Composer через контейнер Sail
+# Инициализация Composer через контейнер Sail
 docker run --rm \
     -u "$(id -u):$(id -g)" \
     -v "$(pwd):/opt" \
@@ -82,20 +79,20 @@ docker run --rm \
     laravelsail/php83-composer:latest \
     composer install --ignore-platform-reqs
 
-3.2 Запуск контейнеров в фоновом режиме
+# Запуск контейнеров в фоновом режиме
 ./vendor/bin/sail up -d
 
-### 4. Генерация ключа, миграции и сборка фронтенда
+4. Генерация ключа, миграции и сборка фронтенда
 ./vendor/bin/sail artisan key:generate
 ./vendor/bin/sail artisan migrate --seed
 
-4.1 Установка и сборка React/CSS фронтенда
+# Установка и сборка React/CSS фронтенда
 ./vendor/bin/sail npm install
 ./vendor/bin/sail npm run build
 
-### 5. Запуск воркера очередей и планировщика (для работы авто-отмены и сбора афиши)
+5. Запуск воркера очередей и планировщика (для работы авто-отмены и сбора афиши)
 ./vendor/bin/sail artisan queue:work
 ./vendor/bin/sail artisan schedule:work
 
-### 6. Запуск тестов
+6. Запуск тестов
 ./vendor/bin/sail artisan test
