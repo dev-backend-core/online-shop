@@ -1,58 +1,62 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🎬 QuickShow — Production-Ready Backend RESTful API для бронирования билетов
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Высокопроизводительный и защищенный REST API сервис для онлайн-кинотеатра. Проект разработан с использованием чистой архитектуры (Action Pattern), асинхронной обработки задач (Queues/Jobs), защиты от Race Conditions и автоматической фоновой синхронизации данных.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🛠 Технологический стек
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+* **Backend:** PHP 8.3+, Laravel 11
+* **Database:** MySQL 8.0 (сложная реляционная схема, пессимистичные блокировки `lockForUpdate`)
+* **Caching & Queue Driver:** Redis (Atomic Locks, Caching, Session/Queue storage)
+* **Testing:** PHPUnit / Pest (Integration & Unit Tests для Actions, Mappers, HTTP Fake API)
+* **Authentication:** Laravel Socialite (Google OAuth2), HTTP-only Secure Cookies, Access Tokens, CSRF Protection
+* **Integrations:** Kinopoisk API (HTTP Client Pools / Mappers), Stripe API (Payments)
+* **Frontend:** React (SPA) + Bootstrap
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## ⚡ Архитектура и ключевые инженерные решения
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 🧩 1. Чистая архитектура (Actions, Mappers, Services)
+* **Thin Controllers:** Вся бизнес-логика вынесена из контроллеров в изолированные Single-Responsibility **Action-классы** (`SyncMoviesAction`, `SearchMoviesAction` и др.).
+* **Data Mapper Pattern:** Данные из внешнего API (Кинопоиск) нормализуются через специальный Mapper перед сохранением в БД, что полностью изолирует приложение от изменений во внешних структурах данных.
+* **Безопасная работа с конфигурацией:** Все переменные окружения проброшены через `config/services.php`. Использование `config()` гарантирует корректную работу при кешировании конфигураций на продакшене (`config:cache`).
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### ⏱ 2. Управление очередями (Queues) и авто-отмена брони
+* **Delayed Queues (Отложенные задачи):** При бронировании билета создается фоновая задача со сдвигом на 10 минут. Если статус оплаты не меняется на "Paid", задача автоматически отменяет бронь и возвращает место в свободную продажу.
+* **Events, Listeners & Notifications:** Выделенная система событий для отправки Email-уведомлений и напоминаний о сеансе за 2 часа до начала.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### ⏰ 3. Планировщик задач (Laravel Scheduler)
+* Настроен фоновый **Cron-планировщик**, который автоматически раз в сутки (в 01:00) обновляет список премьер, расписание сеансов и рейтинг фильмов через асинхронные HTTP-пулы.
 
-## Agentic Development
+### 🛡 4. Безопасность и защита от нагрузок
+* **Защита от Race Conditions:** Использование пессимистичных блокировок в MySQL и атомарных блокировок Redis (`Redis::funnel`) исключает двойное бронирование одного места при параллельных запросах.
+* **Rate Limiting (`throttle`):** Критические эндпоинты (оплата, отправка брони) защищены middleware-ограничителями (3 запроса в минуту на пользователя) для предотвращения флуда и брутфорса.
+* **HTTP-Only Cookies & CSRF:** Безопасный обмен токенами авторизации без хранения чувствительных данных в `localStorage`.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### 🧪 5. Надежное тестирование (Test-Driven Mindset)
+* Покрытие тестами 핵심-модулей (Actions, Mappers, API Integrations).
+* Использование `Http::fake()`, `Mockery` и `Carbon::setTestNow()` для изолированного тестирования без реальных запросов к сторонним сервисам.
 
+---
+
+## 🔄 Основной пользовательский сценарий (User Flow)
+
+1. **Авторизация:** Вход через Email или Google OAuth2.
+2. **Выбор фильма и сеанса:** Отображение кэшированной афиши и актуальных залов.
+3. **Бронирование:** Место временно блокируется на 10 минут.
+4. **Оплата:** Переход в безопасный шлюз Stripe.
+5. **Подтверждение:** В случае успеха — отправка электронного билета. В случае отмены или таймаута (10 мин) — автоматически срабатывает Job и освобождает место.
+
+---
+
+## 🚀 Инструкция по локальному развертыванию
+
+### 1. Клонирование и установка зависимостей
 ```bash
-composer require laravel/boost --dev
+git clone [https://github.com/ТВОЙ_ЛОГИН/QuickShow.git](https://github.com/ТВОЙ_ЛОГИН/QuickShow.git)
+cd QuickShow
 
-php artisan boost:install
-```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+composer install
+npm install
