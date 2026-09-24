@@ -20,17 +20,13 @@ class StripeWebhookControllerTest extends TestCase
 
     public function test_it_updates_tickets_status_to_paid_and_dispatches_event_on_successful_checkout()
     {
-        // 1. Подготовка: создаем 2 билета со статусом 'reserved'
+      
         Event::fake([BookingCreated::class]); // Замораживаем ивент, чтобы он не отправлял реальные письма
 
         $userTarget = User::factory()->create();
-        $movie1 = Movie::factory()->create([
-            'slug'  => 'bebe-' . fake()->unique()->slug(),
-        ]);
+        $movie1 = Movie::factory()->create();
 
-        $movie2 = Movie::factory()->create([
-            'slug'  => 'bebe-' . fake()->unique()->slug(),
-        ]);
+        $movie2 = Movie::factory()->create();
 
         $show1 = Show::factory()->create([
             'movie_id' => $movie1->id,
@@ -85,11 +81,11 @@ class StripeWebhookControllerTest extends TestCase
             'Stripe-Signature' => 't=123,v1=fake_signature',
         ]);
 
-        // 4. Проверки:
+       
         $response->assertStatus(200);
         $response->assertJson(['status' => 'success']);
 
-        // Проверяем, что статусы билетов изменились на 'paid'
+      
         $this->assertDatabaseHas('tickets', ['id' => $ticket1->id, 'status' => 'paid']);
         $this->assertDatabaseHas('tickets', ['id' => $ticket2->id, 'status' => 'paid']);
 
@@ -102,9 +98,7 @@ class StripeWebhookControllerTest extends TestCase
     public function test_it_cancels_tickets_when_checkout_session_expires()
     {
         $userTarget = User::factory()->create();
-        $movie1 = Movie::factory()->create([
-            'slug'  => 'bebe-' . fake()->unique()->slug(),
-        ]);
+        $movie1 = Movie::factory()->create();
 
         $show1 = Show::factory()->create([
             'movie_id' => $movie1->id,
@@ -120,7 +114,6 @@ class StripeWebhookControllerTest extends TestCase
             'status' => 'reserved',
         ]);
 
-        // 2. Готовим фейковый Stripe Event со статусом expired
         $fakeStripeEvent = StripeEvent::constructFrom([
             'type' => 'checkout.session.expired',
             'data' => [
@@ -135,12 +128,10 @@ class StripeWebhookControllerTest extends TestCase
             $mock->shouldReceive('constructEvent')->andReturn($fakeStripeEvent);
         });
 
-        // 3. Делаем запрос
         $response = $this->postJson('/api/stripe/webhook', [], [
             'Stripe-Signature' => 't=123,v1=fake_signature',
         ]);
 
-        // 4. Проверяем, что ответ 200 и статус билета изменился на 'cancelled'
         $response->assertStatus(200);
         $this->assertDatabaseHas('tickets', ['id' => $ticket->id, 'status' => 'cancelled']);
     }

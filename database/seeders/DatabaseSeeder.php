@@ -19,41 +19,40 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // $movies = Movie::factory(5)->create();
+        $movies = Movie::factory(5)->create();
        
-        $user = User::where('email','1@gmail.com');
-        
-        // // 4. Создаем сеансы
-        // foreach($movies as $item){
-        //     Show::factory()->create([
-        //         'movie_id' => $item->id,
-        //     ]);
-        // }
+        $user = User::factory()->create(['email' => '1@gmail.com']);
+    
+        // Создаем сеансы
+        foreach($movies as $item){
+            Show::factory()->create([
+                'movie_id' => $item->id,
+            ]);
+        }
 
-        // $seats = collect();
-        // for ($row = 1; $row <= 10; $row++) {
-        //     for ($seatNum = 1; $seatNum <= 9; $seatNum++) {
-        //         $seats->push(
-        //             Seat::create([
-        //                 'row_number'  => $row,
-        //                 'seat_number' => $seatNum,
-        //             ])
-        //         );
-        //     }
-        // }
+        $seats = collect();
+        for ($row = 1; $row <= 10; $row++) {
+            for ($seatNum = 1; $seatNum <= 9; $seatNum++) {
+                $seats->push(
+                    Seat::create([
+                        'row_number'  => $row,
+                        'seat_number' => $seatNum,
+                    ])
+                );
+            }
+        }
 
-        // 5. Покупаем пару пробных билетов для первого сеанса
-        // $show = Show::first();
+        // Покупаем пару пробных билетов для первого сеанса
+        $show = Show::first();
        
         Ticket::factory()->create([
-            'user_id' => 1,
-            'show_id' => 4,
-            'seat_id' => 4,
-            'price'   => 230,
+            'user_id' => $user->id,
+            'show_id' => $show->id,
+            'seat_id' => $seats->first()->id,
         ]);
         
-        // $user->favoriteMovies()->attach(
-        //     $movies->random(2)->pluck('id')
-        // );
+        $user->favoriteMovies()->attach(
+            $movies->random(2)->pluck('id')
+        );
     }
 }

@@ -31,15 +31,11 @@ class ExampleTest extends TestCase
         // 2. Включаем фейк очередей (чтобы перехватывать Job::dispatch)
         Bus::fake();
 
-        // 3. Подготавливаем тестовые данные:
-        // Пользователь А: сеанс ровно через 2 часа (14:00) -> должен получить
         $seat2 = Seat::factory()->create();
         $seat1 = Seat::factory()->create();
 
         $userTarget = User::factory()->create();
-        $movie1 = Movie::factory()->create([
-            'slug'  => 'bebe-' . fake()->unique()->slug(),
-        ]);
+        $movie1 = Movie::factory()->create();
 
         $show1 = Show::factory()->create([
             'movie_id' => $movie1->id,
@@ -56,11 +52,8 @@ class ExampleTest extends TestCase
 
         ]);
 
-        // Пользователь Б: сеанс через 5 часов (17:00) -> не должен получить
         $userOther = User::factory()->create();
-        $movie2 = Movie::factory()->create([
-            'slug'  => 'bebe-' . fake()->unique()->slug(),
-        ]);
+        $movie2 = Movie::factory()->create();
 
         $show2 = Show::factory()->create([
             'movie_id' => $movie2->id,
@@ -78,7 +71,7 @@ class ExampleTest extends TestCase
         ]);
 
         // 4. Запускаем КОМАНДУ, а не джобы вручную
-        $this->artisan('app:send-movie-reminders-command') // Укажи тут signature своей команды
+        $this->artisan('app:send-movie-reminders-command')
             ->expectsOutput("Запланировано отправлений: 1")
             ->assertSuccessful();
 
@@ -93,24 +86,19 @@ class ExampleTest extends TestCase
         });
     }
 
-    /*Итоговая суть блока
-    Этот тест говорит фреймворку:
-
-    «Включи перехват уведомлений. Возьми билет и выполни код Job напрямую. А теперь убедись, что хозяин этого билета ($userTarget) получил сообщение MovieReminderNotification!» */
+    
 
     public function test_send_movie_reminder_job_sends_notification_and_updates_status()
     {
         $now = Carbon::parse('2026-09-19 12:00:00');
         Carbon::setTestNow($now);
-        // 2. Включаем фейк уведомлений
+    
         Notification::fake();
 
         $seat1 = Seat::factory()->create();
 
         $userTarget = User::factory()->create();
-        $movie1 = Movie::factory()->create([
-            'slug'  => 'bebe-' . fake()->unique()->slug(),
-        ]);
+        $movie1 = Movie::factory()->create();
 
         $show1 = Show::factory()->create([
             'movie_id' => $movie1->id,
@@ -126,7 +114,7 @@ class ExampleTest extends TestCase
             'price' => 350,
         ]);
 
-        // Вызов джобу вручную
+        
         (new SendMovieReminderJob($ticket))->handle();
 
         Notification::assertSentTo(
@@ -134,7 +122,6 @@ class ExampleTest extends TestCase
             MovieReminderNotification::class
         );
 
-        // Проверяем, что флаг reminder_sent изменился в БД
         $this->assertDatabaseHas('tickets', [
             'id' => $ticket->id,
             'reminder_sent' => true,
@@ -146,7 +133,6 @@ class ExampleTest extends TestCase
         $user = User::factory()->create();
         $movie = Movie::factory()->create([
             'title' => 'Интерстеллар',
-            'slug'  => 'bebe-' . fake()->unique()->slug(),
         ]);
         $seat = Seat::factory()->create();
         $show = Show::factory()->create([
@@ -159,15 +145,12 @@ class ExampleTest extends TestCase
             'show_id' => $show->id,
             'seat_id' => $seat->id,
         ]);
-        // 2. Создаем объект уведомления
+       
         $notification = new MovieReminderNotification($ticket);
 
-        // 3. Вызываем метод toMail() напрямую!
+       
         $mail = $notification->toMail($user);
 
-        // 4. ПРОВЕРКИ (Assertions):
-        
-        // Проверяем тему письма (Subject)
         $this->assertStringContainsString('Напоминаем, что ваш сеанс начинается совсем скоро.', $mail->introLines[0]);
         $this->assertStringContainsString('Фильм: Интерстеллар', $mail->introLines[1]);
         $this->assertStringContainsString('Номер билета: #4', $mail->introLines[4]);
@@ -193,13 +176,12 @@ class ExampleTest extends TestCase
     {
         Bus::fake();
 
-        // Запускаем команду при пустой базе данных
         $this->artisan('app:send-movie-reminders-command')
             ->expectsOutput("Запланировано отправлений: 0")
             ->assertSuccessful();
 
-        // Проверяем, что в очередь ВООБЩЕ ничего не отправлялось
-        Bus::assertNothingDispatched(); // или Bus::assertNotDispatched(SendMovieReminderJob::class);
+        
+        Bus::assertNothingDispatched();
     }
 
     public function test_does_not_send_reminder_if_already_sent() : void 
@@ -207,7 +189,6 @@ class ExampleTest extends TestCase
         $now = Carbon::parse('2026-09-19 12:00:00');
         Carbon::setTestNow($now);
 
-        // 2. Включаем фейк очередей (чтобы перехватывать Job::dispatch)
         Bus::fake();
 
         
@@ -215,9 +196,7 @@ class ExampleTest extends TestCase
         $seat1 = Seat::factory()->create();
 
         $userTarget = User::factory()->create();
-        $movie1 = Movie::factory()->create([
-            'slug'  => 'bebe-' . fake()->unique()->slug(),
-        ]);
+        $movie1 = Movie::factory()->create();
 
         $show1 = Show::factory()->create([
             'movie_id' => $movie1->id,
@@ -234,9 +213,7 @@ class ExampleTest extends TestCase
         ]);
 
         $userOther = User::factory()->create();
-        $movie2 = Movie::factory()->create([
-            'slug'  => 'bebe-' . fake()->unique()->slug(),
-        ]);
+        $movie2 = Movie::factory()->create();
 
         $show2 = Show::factory()->create([
             'movie_id' => $movie2->id,
@@ -253,12 +230,11 @@ class ExampleTest extends TestCase
 
         ]);
 
-        // 4. Запускаем КОМАНДУ, а не джобы вручную
-        $this->artisan('app:send-movie-reminders-command') // Укажи тут signature своей команды
+    
+        $this->artisan('app:send-movie-reminders-command')
             ->expectsOutput("Запланировано отправлений: 0")
             ->assertSuccessful();
 
-    
         Bus::assertNotDispatched(SendMovieReminderJob::class);
     }
 }

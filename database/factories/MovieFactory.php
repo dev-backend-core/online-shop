@@ -20,6 +20,7 @@ class MovieFactory extends Factory
         return [
             'kinopoisk_id' => fake()->unique()->numberBetween(100, 999999),
             'title'        => fake()->sentence(1),
+            'slug'         => 'bebe-' . fake()->unique()->slug(),
             'description'  => fake()->paragraph(),
             'duration_min' => fake()->numberBetween(90, 180),
             'poster_url'   => fake()->imageUrl(300, 450, 'movies'),

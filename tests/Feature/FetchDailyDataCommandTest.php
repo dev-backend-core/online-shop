@@ -46,7 +46,7 @@ class FetchDailyDataCommandTest extends TestCase
             ->once()
             ->andReturn(true);
         });
-        // 2. Кладем тестовое значение в кэш, чтобы убедиться, что оно удалится
+       
         Cache::put('all_movies', ['movie_1', 'movie_2'], 3600);
         $this->assertTrue(Cache::has('all_movies'));
 
@@ -55,7 +55,6 @@ class FetchDailyDataCommandTest extends TestCase
             ->expectsOutput('Фильмы успешно синхронизированы!')
             ->assertSuccessful();
 
-        // 4. Проверяем, что кэш действительно очистился
         $this->assertFalse(Cache::has('all_movies'));
     }
 
@@ -75,15 +74,14 @@ class FetchDailyDataCommandTest extends TestCase
             ], 200),
         ]);
 
-        // 2. Вызываем класс/сервис, где находится getPremieres()
         $service = new KinopoiskService();
         $result = $service->getPremieres();
 
-        // 3. ПРОВЕРКИ
+        
         $this->assertCount(1, $result);
         $this->assertEquals(101, $result[0]['kinopoisk_id']);
         $this->assertEquals('Интерстеллар', $result[0]['title']);
-        $this->assertEquals('interstellar-101', $result[0]['slug']); // Проверка генерации slug
+        $this->assertEquals('interstellar-101', $result[0]['slug']); 
         $this->assertEquals(8.6, $result[0]['rating']);
 
         // Проверяем, что запрос на премьеры ушел с X-API-KEY
@@ -107,7 +105,6 @@ class FetchDailyDataCommandTest extends TestCase
 
     public function test_get_premieres_limits_results_to_fifteen(): void
     {
-        // Генерируем 20 тестовых фильмов
         $items = array_map(fn($id) => ['kinopoiskId' => $id, 'nameRu' => "Movie $id"], range(1, 20));
 
         Http::fake([
@@ -117,9 +114,7 @@ class FetchDailyDataCommandTest extends TestCase
 
         $service = new KinopoiskService();
         $result = $service->getPremieres();
-        // dd($result);
-
-        // Должно остаться ровно 15 элементов
+      
         $this->assertCount(15, $result);
     }
 
@@ -135,13 +130,11 @@ class FetchDailyDataCommandTest extends TestCase
 
         $service = new KinopoiskService();
         $result = $service->getPremieres();
-        // dd($result);
+        
       
         $this->assertEquals('movie-999', $result[0]['slug']);
         $this->assertEquals('Без названия', $result[0]['title']);
-        // $this->assertNull($result[0]['title']);
-
-        // Проверяем, что рейтинг сгенерировался в допустимом диапазоне 5.0 - 7.1
+        
         $this->assertGreaterThanOrEqual(5.0, $result[0]['rating']);
         $this->assertLessThanOrEqual(7.1, $result[0]['rating']);
     }
@@ -169,14 +162,11 @@ class FetchDailyDataCommandTest extends TestCase
             ], 200),
         ]);
 
-        // 2. Вызываем Action
         $action = app(SyncMoviesAction::class);
         $result = $action->execute();
 
-        // Проверяем, что экшен вернул true
         $this->assertTrue($result);
 
-        // 3. Проверяем реальное сохранение в БД
         $this->assertDatabaseHas('movies', [
             'kinopoisk_id' => 101,
             'title'        => 'Interstellar',
@@ -185,7 +175,6 @@ class FetchDailyDataCommandTest extends TestCase
 
         $movie = Movie::where('kinopoisk_id', 101)->first();
 
-        // Проверяем, что у фильма создались 3 дефолтных сеанса
         $this->assertCount(3, $movie->shows);
 
         $this->assertDatabaseHas('shows', [
@@ -202,9 +191,9 @@ class FetchDailyDataCommandTest extends TestCase
                 'films' => [
                     [
                         'filmId' => 777,
-                        'nameEn' =>  '', // Нет английского названия
-                        'rating' => 'null', // Некорректный rating
-                        'year'   => 'N/A',  // Нечисловой год
+                        'nameEn' =>  '', 
+                        'rating' => 'null', 
+                        'year'   => 'N/A',  
                     ]
                 ]
             ], 200),
@@ -240,33 +229,29 @@ class FetchDailyDataCommandTest extends TestCase
         
         Carbon::setTestNow('2026-10-01 12:00:00');
 
-        // 2. Создаем тестовый фильм в БД через фабрику или вручную
+        
         $movie = Movie::factory()->create([
             'title' => 'Тестовый Фильм',
-            'slug' => 'bebe-' . fake()->unique()->slug(),
         ]);
 
-        // 3. Вызываем тестируемый метод
+       
         SearchMoviesAction::generateDefaultShows($movie);
 
-        // 4. Проверяем, что создано ровно 3 сеанса
+       
         $this->assertDatabaseCount('shows', 3);
 
-        // Проверяем первый сеанс (сегодня в 10:00 UTC -> 2026-10-01T10:00:00Z)
         $this->assertDatabaseHas('shows', [
             'movie_id'   => $movie->id,
             'start_time' => '2026-10-01T10:00:00.000000Z',
             'price'      => 350.00,
         ]);
 
-        // Проверяем второй сеанс (завтра в 18:00 UTC -> 2026-10-02T18:00:00Z)
         $this->assertDatabaseHas('shows', [
             'movie_id'   => $movie->id,
             'start_time' => '2026-10-02T18:00:00.000000Z',
             'price'      => 350.00,
         ]);
 
-        // Проверяем третий сеанс (завтра в 22:00 UTC -> 2026-10-02T22:00:00Z)
         $this->assertDatabaseHas('shows', [
             'movie_id'   => $movie->id,
             'start_time' => '2026-10-02T22:00:00.000000Z',
@@ -278,24 +263,21 @@ class FetchDailyDataCommandTest extends TestCase
     {
         Carbon::setTestNow('2026-10-01 12:00:00');
 
-        $movie = Movie::factory()->create(['slug' => 'bebe-' . fake()->unique()->slug(),]);
+        $movie = Movie::factory()->create();
 
-        // Вызываем первый раз
+       
         SearchMoviesAction::generateDefaultShows($movie);
 
-        // Вызываем второй раз для того же фильма
         SearchMoviesAction::generateDefaultShows($movie);
 
-        // Благодаря updateOrCreate кол-во записей всё равно должно остаться 3, а не стать 6
         $this->assertDatabaseCount('shows', 3);
     }
 
     public function test_successfully_fetches_creates_movie_and_shows(): void
     {
-        // 1. Помещаем что-то в кэш, чтобы проверить его очистку
+      
         Cache::put('all_movies', ['some_cached_data']);
 
-        // Mock сервиса Kinopoisk
         $detailsData = [
             'kinopoiskId'      => 555,
             'nameRu'           => 'Начало',
@@ -313,29 +295,26 @@ class FetchDailyDataCommandTest extends TestCase
                 ->andReturn($detailsData);
         });
 
-        // 2. Вызываем Action
+      
         $action = app(SearchMoviesAction::class);
         $movie = $action->execute(555);
 
-        // 3. Проверки (Assertions)
         $this->assertInstanceOf(Movie::class, $movie);
         $this->assertEquals('Inception', $movie->title);
 
-        // Проверяем запись фильма в БД
         $this->assertDatabaseHas('movies', [
             'kinopoisk_id' => 555,
             'title'        => 'Inception',
             'rating'       => 8.7,
         ]);
 
-        // Проверяем, что дефолтные сеансы создались
+       
         $this->assertCount(3, $movie->shows);
         $this->assertDatabaseHas('shows', [
             'movie_id' => $movie->id,
             'price'    => 350.00,
         ]);
 
-        // Проверяем, что кэш был очищен
         $this->assertFalse(Cache::has('all_movies'));
     }
 

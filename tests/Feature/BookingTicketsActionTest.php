@@ -6,11 +6,9 @@ use App\Actions\BookingTicketsAction;
 use App\Models\Movie;
 use App\Models\Seat;
 use App\Models\Show;
-use App\Models\Ticket;
 use App\Models\User;
 use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
@@ -29,7 +27,7 @@ class BookingTicketsActionTest extends TestCase
     public function test_throws_exception_if_cache_lock_times_out()
     {
         $user = User::factory()->create();
-        $movie = Movie::factory()->create(['slug'  => 'bebe-' . fake()->unique()->slug(),]);
+        $movie = Movie::factory()->create();
         $show = Show::factory()->create(['movie_id' => $movie->id,]);
         $seat = Seat::factory()->create();
 
