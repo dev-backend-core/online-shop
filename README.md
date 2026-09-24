@@ -66,7 +66,23 @@ cd online-shop
 Скопируйте шаблонный файл .env.example в .env:
 
 cp .env.example .env
-Примечание: Укажите свои тестовые ключи для Google OAuth, Stripe и Kinopoisk API в созданном файле .env.
+Примечание: Укажите свои тестовые ключи для Google OAuth, Stripe и Kinopoisk API в созданном файле .env:
+# GOOGLE AUTH
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URL=http://localhost/api/auth/callback
+
+# Домены, с которых разрешены запросы с куками
+SANCTUM_STATEFUL_DOMAINS=localhost:5174,127.0.0.1:5174
+SESSION_DOMAIN=localhost
+
+# API MOVIE
+KINOPOISK_API_KEY=
+
+# API KEY STRIPE
+SECRET_KEY=sk_test_...
+PUBLISHABLE_KEY=pk_test_...
+WEBHOOK_SECRET=whsec_...
 
 3. Установка зависимостей Composer и запуск контейнеров
 Так как папка vendor не хранится в репозитории, установите зависимости и поднимите Docker-контейнеры:
