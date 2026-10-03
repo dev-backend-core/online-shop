@@ -5,8 +5,8 @@ REST API сервис для онлайн-кинотеатра на Laravel и D
 Проект полностью разворачивается в контейнерах **Docker (Laravel Sail / Docker Compose)**.
 ---
 
-## Ссылка на проект: http://80.87.193.245.nip.io  
-(если долго грузиться или не открывается попробуй отключить vpn)
+🌐 **Демо-версия:** [http://80.87.193.245.nip.io](http://80.87.193.245.nip.io)  
+*(Если страница долго грузится или не открывается, попробуйте отключить VPN)*
 
 ## 🛠 Технологический стек
 
@@ -62,14 +62,13 @@ REST API сервис для онлайн-кинотеатра на Laravel и D
 
 ### 1. Клонирование репозитория
 ```bash
-git clone https://github.com/dev-backend-core/online-shop.git
+git clone https://github.com/dev-backend-core/online-shop.git <br>
 cd online-shop
 
-2. Настройка файла окружения .env
-Скопируйте шаблонный файл .env.example в .env:
-
+2. Настройка файла окружения .env <br>
 cp .env.example .env
-Примечание: Укажите свои тестовые ключи для Google OAuth, Stripe и Kinopoisk API в созданном файле .env:
+
+Примечание: Укажите свои тестовые ключи для Google OAuth, Stripe и Kinopoisk API в созданном файле .env:<br>
 # GOOGLE AUTH
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
@@ -88,20 +87,19 @@ PUBLISHABLE_KEY=pk_test_...
 WEBHOOK_SECRET=whsec_...
 
 3. Установка зависимостей Composer и запуск контейнеров
-Так как папка vendor не хранится в репозитории, установите зависимости и поднимите Docker-контейнеры:
 
 # Инициализация Composer через контейнер Sail
 docker run --rm \
     -u "$(id -u):$(id -g)" \
-    -v "$(pwd):/opt" \
-    -w /opt \
+    -v "$(pwd):/var/www/html" \
+    -w /var/www/html \
     laravelsail/php83-composer:latest \
     composer install --ignore-platform-reqs
 
-# Запуск контейнеров в фоновом режиме
+# Запуск контейнеров в фоновом режиме: <br>
 ./vendor/bin/sail up -d
 
-4. Генерация ключа, миграции и сборка фронтенда
+4. Генерация ключа, миграции и сборка фронтенда <br>
 ./vendor/bin/sail artisan key:generate
 ./vendor/bin/sail artisan migrate --seed
 
@@ -109,9 +107,14 @@ docker run --rm \
 ./vendor/bin/sail npm install
 ./vendor/bin/sail npm run build
 
-5. Запуск воркера очередей и планировщика (для работы авто-отмены и сбора афиши)
+5. Запуск воркера очередей и планировщика (для работы авто-отмены и сбора афиши) запустите в отдельных окнах терминала: <br>
+# Очереди (обработка авто-отмен и писем)
 ./vendor/bin/sail artisan queue:work
+
+# Планировщик задач (в отдельном терминале)
 ./vendor/bin/sail artisan schedule:work
 
 6. Запуск тестов
 ./vendor/bin/sail artisan test
+
+Приложение будет доступно по адресу: http://localhost
