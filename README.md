@@ -62,13 +62,13 @@ REST API сервис для онлайн-кинотеатра на Laravel и D
 
 ### 1. Клонирование репозитория
 ```bash
-git clone https://github.com/dev-backend-core/online-shop.git <br>
+git clone https://github.com/dev-backend-core/online-shop.git 
 cd online-shop
 
-2. Настройка файла окружения .env <br>
+2. Настройка файла окружения .env:
 cp .env.example .env
 
-Примечание: Укажите свои тестовые ключи для Google OAuth, Stripe и Kinopoisk API в созданном файле .env:<br>
+Примечание: Укажите свои тестовые ключи для Google OAuth, Stripe и Kinopoisk API в созданном файле .env:
 # GOOGLE AUTH
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
@@ -96,10 +96,10 @@ docker run --rm \
     laravelsail/php83-composer:latest \
     composer install --ignore-platform-reqs
 
-# Запуск контейнеров в фоновом режиме: <br>
+# Запуск контейнеров в фоновом режиме: 
 ./vendor/bin/sail up -d
 
-4. Генерация ключа, миграции и сборка фронтенда <br>
+4. Генерация ключа, миграции и сборка фронтенда: 
 ./vendor/bin/sail artisan key:generate
 ./vendor/bin/sail artisan migrate --seed
 
@@ -107,7 +107,7 @@ docker run --rm \
 ./vendor/bin/sail npm install
 ./vendor/bin/sail npm run build
 
-5. Запуск воркера очередей и планировщика (для работы авто-отмены и сбора афиши) запустите в отдельных окнах терминала: <br>
+5. Запуск воркера очередей и планировщика (для работы авто-отмены и сбора афиши) запустите в отдельных окнах терминала: 
 # Очереди (обработка авто-отмен и писем)
 ./vendor/bin/sail artisan queue:work
 
